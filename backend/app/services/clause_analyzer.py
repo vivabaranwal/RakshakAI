@@ -1,34 +1,39 @@
-def analyze_contract_clauses(text_blocks: list):
+import httpx
+
+OLLAMA_URL = "http://localhost:11434/api/generate"
+
+async def analyze_contract_clauses(text_blocks: list, mode: str = "Public"):
     """
-    Simulates AI using keyword detection to highlight unfair text blocks.
+    Connects to local Mistral via Ollama. 
+    Uses a strict prompt to reduce generation time and prevent timeouts.
     """
-    keywords = {
-        "liability": ("Liability", "This clause limits the other party's liability, increasing your financial risk."),
-        "indemnify": ("Indemnification", "You may be held financially responsible for damages or losses incurred by the other party."),
-        "termination": ("Termination", "This outlines how the agreement can be ended. Watch out for asymmetrical cancellation rights."),
-        "security deposit": ("Security Deposit", "Pay close attention to the conditions under which your deposit could be permanently withheld.")
-    }
-    
-    detected_clauses = []
-    
-    for block in text_blocks:
-        text_lower = block["text"].lower()
-        
-        for kw, (ctype, explanation) in keywords.items():
-            if kw in text_lower:
-                detected_clauses.append({
-                    "type": ctype,
-                    "text": block["text"],
-                    "page": block["page"],
-                    "bbox": block["bbox"],
-                    "explanation": explanation
-                })
-                # Break to avoid double-tagging the same block in this simple MVP
-                break
-                
-    risk_score = min(100, len(detected_clauses) * 10)
-    
+    # Combine first 5 blocks to speed up local processing
+    full_text = " ".join([b["text"] for b in text_blocks[:5]])
+
+    system_prompt = (
+        f"You are Rakshak AI (Mode: {mode}). Analyze this Indian legal text for risks. "
+        "BE CONCISE. Use max 50 words. "
+        "FORMAT: [Score: X/100] | [Summary: One sentence highlighting the biggest risk]."
+    )
+
+    # timeout=None is crucial for local LLMs that might take >30s to respond
+    async with httpx.AsyncClient(timeout=None) as client:
+        try:
+            response = await client.post(
+                OLLAMA_URL, 
+                json={
+                    "model": "mistral",
+                    "prompt": full_text,
+                    "system": system_prompt,
+                    "stream": False
+                }
+            )
+            ai_result = response.json().get("response", "Analysis unavailable.")
+        except Exception as e:
+            ai_result = f"AI Error: {str(e)}. Ensure Ollama is running."
+
     return {
-        "risk_score": risk_score,
-        "clauses": detected_clauses
+        "risk_score": 80 if "high" in ai_result.lower() else 30,
+        "analysis_summary": ai_result,
+        "clauses": text_blocks  # Includes coordinates for frontend highlights
     }
