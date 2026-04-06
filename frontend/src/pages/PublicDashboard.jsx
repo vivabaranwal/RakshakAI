@@ -2,86 +2,69 @@ import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
-    ArrowLeft, Shield, UploadCloud, AlertTriangle, CheckCircle2,
-    FileText, X, ChevronDown, Volume2
+    ArrowLeft, Shield, UploadCloud, AlertTriangle, X, FileText
 } from 'lucide-react';
 import { useDocumentStore } from '../store/useDocumentStore';
 import HighlightViewer from '../components/HighlightViewer';
 
-function RiskBar({ score }) {
-    const fair = 100 - score;
-    const color = score > 60 ? 'bg-rose-500' : score > 30 ? 'bg-amber-500' : 'bg-emerald-500';
-    const label = score > 60 ? 'text-rose-400' : score > 30 ? 'text-amber-400' : 'text-emerald-400';
-    return (
-        <div className="glass border border-white/8 rounded-2xl p-6">
-            <div className="flex justify-between items-baseline mb-3">
-                <span className="text-sm font-semibold text-white/50 uppercase tracking-wider">Fairness Score</span>
-                <span className={`text-4xl font-black ${label}`}>{fair}<span className="text-base font-normal text-white/30">/100</span></span>
-            </div>
-            <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden">
-                <div className={`h-full ${color} rounded-full transition-all duration-1000`} style={{ width: `${Math.max(3, fair)}%` }} />
-            </div>
-            <p className="text-xs text-white/30 mt-2">
-                {score > 60 ? '⚠️ High Risk — review carefully before signing.' : score > 30 ? '⚡ Moderate Risk — some clauses need attention.' : '✅ Low Risk — document appears fair.'}
-            </p>
-        </div>
-    );
-}
+function RiskFeed({ clauses, summary, riskScore, selected, onSelect }) {
+    const avgFairness = 100 - riskScore;
+    const textColor = riskScore > 60 ? 'text-red-400' : riskScore > 30 ? 'text-amber-400' : 'text-emerald-400';
 
-function ClauseList({ clauses, onSelect, selected }) {
+    const shadowColor = riskScore > 60 ? 'rgba(239,68,68,0.6)' : riskScore > 30 ? 'rgba(251,191,36,0.6)' : 'rgba(52,211,153,0.6)';
+
     return (
-        <div className="flex flex-col gap-2">
-            <h3 className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-1">
-                Red Flags ({clauses.length})
+        <div className="flex flex-col h-full bg-slate-950/50 border-r border-red-500/10 p-6 overflow-y-auto w-full custom-scrollbar">
+            <div className="mb-6 pb-6 border-b border-red-500/10">
+                <h2 className="text-xl font-bold font-mono text-slate-100 mb-2">Analysis Results</h2>
+                <div className="flex items-center gap-3">
+                    <span className={`text-3xl font-black ${textColor}`} style={{ filter: `drop-shadow(0 0 12px ${shadowColor})` }}>{avgFairness}</span>
+                    <span className="text-xs text-slate-400 uppercase tracking-widest">/100 Fairness</span>
+                </div>
+                {summary && <p className="text-sm text-slate-400 mt-3 border-l-2 border-cyan-500/50 pl-3 lowercase font-mono">{summary}</p>}
+            </div>
+
+            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-4 font-mono">
+                Identified Red Flags ({clauses.length})
             </h3>
-            {clauses.length === 0 && (
-                <div className="text-center py-8 text-white/25 text-sm">No critical clauses found.</div>
-            )}
-            {clauses.map((c, i) => (
-                <button
-                    key={i}
-                    onClick={() => onSelect(selected?.text === c.text ? null : c)}
-                    className={`w-full text-left rounded-xl border px-4 py-3 transition-all ${selected?.text === c.text
-                        ? 'border-rose-500/50 bg-rose-500/10'
-                        : 'border-white/8 bg-white/[0.02] hover:bg-white/[0.04] hover:border-white/15'
-                        }`}
-                >
-                    <div className="flex items-center justify-between mb-1">
-                        <span className="text-[11px] font-bold text-rose-400 uppercase tracking-widest">{c.type}</span>
-                        <span className="text-[10px] text-white/20">Pg {c.page}</span>
-                    </div>
-                    <p className="text-xs text-white/60 leading-relaxed line-clamp-2">{c.text}</p>
-                </button>
-            ))}
-        </div>
-    );
-}
 
-function ExplanationModal({ clause, onClose }) {
-    if (!clause) return null;
-    const speak = () => {
-        const u = new SpeechSynthesisUtterance(clause.explanation);
-        window.speechSynthesis.speak(u);
-    };
-    return (
-        <div className="animate-fade-up glass border border-rose-500/20 rounded-2xl p-5 flex flex-col gap-3">
-            <div className="flex items-start justify-between">
-                <span className="text-xs font-bold text-rose-400 uppercase tracking-widest">{clause.type}</span>
-                <button onClick={onClose} className="text-white/20 hover:text-white/60 transition-colors">
-                    <X className="w-4 h-4" />
-                </button>
+            <div className="flex flex-col gap-3">
+                {clauses.length === 0 ? (
+                    <div className="text-center py-8 text-slate-500 text-sm font-mono">No critical risks detected.</div>
+                ) : (
+                    clauses.map((c, i) => (
+                        <button
+                            key={i}
+                            onClick={() => onSelect(selected?.text === c.text ? null : c)}
+                            className={`w-full text-left rounded-lg p-4 border transition-all ${selected?.text === c.text
+                                    ? 'bg-red-500/10 border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.1)]'
+                                    : 'bg-slate-900 border-red-500/10 hover:border-red-500/20'
+                                }`}
+                        >
+                            <div className="flex justify-between items-start mb-3">
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${c.fairness_score < 40 ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'
+                                    }`}>
+                                    {c.type}
+                                </span>
+                                <span className="text-xs font-mono text-slate-500">Score: {c.fairness_score}/100</span>
+                            </div>
+                            <p className="text-sm text-slate-300 leading-relaxed mb-2">{c.explanation}</p>
+                            <div className="bg-slate-950 p-2 rounded border border-slate-800 border-dashed">
+                                <p className="text-[10px] text-slate-500 italic line-clamp-2 leading-tight">
+                                    "{c.text}"
+                                </p>
+                            </div>
+                        </button>
+                    ))
+                )}
             </div>
-            <p className="text-sm text-white/80 leading-relaxed">{clause.explanation}</p>
-            <button onClick={speak} className="flex items-center gap-2 text-xs text-blue-400 hover:text-blue-300 transition-colors w-fit">
-                <Volume2 className="w-3.5 h-3.5" /> Read aloud
-            </button>
         </div>
     );
 }
 
 export default function PublicDashboard() {
     const navigate = useNavigate();
-    const { activeFileUrl, clauses, riskScore, setDocumentData, selectedClause, setSelectedClause } = useDocumentStore();
+    const { activeFileUrl, clauses, riskScore, summary, setDocumentData, selectedClause, setSelectedClause, reset, setActiveFileUrl, setIsProcessing } = useDocumentStore();
     const [uploading, setUploading] = useState(false);
     const [file, setFile] = useState(null);
     const [error, setError] = useState('');
@@ -90,7 +73,6 @@ export default function PublicDashboard() {
         setError('');
         if (!f) return;
         if (!f.name.endsWith('.pdf')) { setError('Only PDF files are accepted.'); return; }
-        if (f.size > 15 * 1024 * 1024) { setError('File must be under 15 MB.'); return; }
         setFile(f);
     };
 
@@ -101,112 +83,154 @@ export default function PublicDashboard() {
     const handleUpload = async () => {
         if (!file) return;
         setUploading(true); setError('');
+        
+        // Show PDF early while processing
+        setActiveFileUrl(URL.createObjectURL(file));
+        setIsProcessing(true);
+
         const form = new FormData();
         form.append('file', file);
+        form.append('mode', 'Public');
         try {
-            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/v1/upload`, form, {
+            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/v1/analyze`, form, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
-            setDocumentData(URL.createObjectURL(file), res.data.clauses, res.data.risk_score);
+            const docId = res.data.doc_id;
+            
+            // Polling mechanism
+            let isDone = false;
+            while (!isDone) {
+                await new Promise(r => setTimeout(r, 3000));
+                const statusRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/v1/status/${docId}`);
+                const state = statusRes.data.status;
+                
+                if (state === 'COMPLETED') {
+                    setDocumentData(URL.createObjectURL(file), statusRes.data.data.clauses, statusRes.data.data.risk_score, statusRes.data.data.analysis_summary);
+                    isDone = true;
+                } else if (state === 'FAILED' || state === 'error') {
+                    setError('Analysis failed on server.');
+                    setIsProcessing(false);
+                    isDone = true;
+                }
+            }
         } catch (err) {
-            setError(err.response?.data?.detail || 'Upload failed. Is the backend running?');
+            setError(err.response?.data?.detail || 'Analysis request failed.');
+            setIsProcessing(false);
         } finally {
             setUploading(false);
         }
     };
 
     return (
-        <div className="min-h-screen bg-[#0a0f1e] dot-grid text-white flex flex-col">
-            <div className="fixed inset-0 pointer-events-none">
-                <div className="absolute top-[-15%] right-[-5%] w-[500px] h-[500px] bg-blue-600/8 rounded-full blur-[100px]" />
-            </div>
-
-            {/* Nav */}
-            <header className="relative z-10 px-6 py-5 flex items-center gap-4 max-w-7xl mx-auto w-full">
-                <button onClick={() => navigate('/')} className="flex items-center gap-2 text-white/40 hover:text-white text-sm transition-colors">
-                    <ArrowLeft className="w-4 h-4" /> Home
-                </button>
-                <div className="w-px h-4 bg-white/10" />
-                <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center">
-                        <Shield className="w-4 h-4 text-white" strokeWidth={2.5} />
+        <div className="h-screen w-full bg-slate-950 text-slate-200 flex flex-col font-sans overflow-hidden">
+            {/* Header */}
+            <header className="flex-none h-16 border-b border-red-500/10 bg-slate-950/80 px-4 flex items-center justify-between z-10">
+                <div className="flex items-center gap-4">
+                    <button onClick={() => { reset(); navigate('/'); }} className="flex items-center justify-center w-8 h-8 rounded hover:bg-slate-900 text-slate-400 hover:text-cyan-400 transition-colors">
+                        <ArrowLeft className="w-5 h-5" />
+                    </button>
+                    <div className="w-px h-6 bg-slate-800" />
+                    <div className="flex items-center gap-2">
+                        <Shield className="w-5 h-5 text-cyan-500" />
+                        <span className="font-bold tracking-wide text-slate-100 uppercase text-sm font-mono">Rakshak / Public Shield</span>
                     </div>
-                    <span className="font-bold">Public Shield</span>
                 </div>
+                {activeFileUrl && (
+                    <button onClick={() => { reset(); setFile(null); }} className="text-xs text-slate-400 hover:text-cyan-400 transition-colors uppercase tracking-wider font-mono">
+                        [ New Scan ]
+                    </button>
+                )}
             </header>
 
-            <main className="relative z-10 flex-1 flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto w-full px-6 pb-8">
+            {/* Main Content */}
+            <main className="flex-1 flex overflow-hidden">
+                {!activeFileUrl ? (
+                    // Upload State
+                    <div className="w-full h-full flex items-center justify-center p-6 relative">
+                        {/* Background flare */}
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-red-500/5 rounded-full blur-[100px] pointer-events-none" />
 
-                {/* Left Sidebar */}
-                <div className="w-full lg:w-[360px] flex-shrink-0 flex flex-col gap-4">
-                    {!activeFileUrl ? (
-                        <div className="glass rounded-2xl border border-white/8 p-6 flex flex-col gap-5">
-                            <h1 className="text-xl font-bold">Scan Your Document</h1>
-                            <p className="text-white/40 text-sm leading-relaxed">Upload a rental agreement, freelance contract, or any legal document to detect unfair terms instantly.</p>
+                        <div className="w-full max-w-lg bg-slate-900/50 border border-red-500/20 p-8 rounded-xl backdrop-blur-sm z-10 shadow-2xl">
+                            <h1 className="text-2xl font-bold text-slate-100 mb-2 font-mono">Initialize Scan</h1>
+                            <p className="text-slate-400 text-sm mb-8 leading-relaxed">
+                                Upload a legal document to detect unfair terms, hidden penalties, and predatory clauses using our Cyber-Legal AI matrix.
+                            </p>
 
                             <div
                                 onDrop={handleDrop}
                                 onDragOver={e => e.preventDefault()}
                                 onClick={() => !file && document.getElementById('pub-file').click()}
-                                className={`border-2 border-dashed rounded-xl p-8 flex flex-col items-center gap-3 transition-all cursor-pointer
-                  ${file ? 'border-blue-500/40 bg-blue-500/5' : 'border-white/10 hover:border-white/25 hover:bg-white/[0.02]'}`}
+                                className={`border border-dashed rounded-lg p-10 flex flex-col items-center gap-4 transition-all cursor-pointer bg-slate-950/50
+                                  ${file ? 'border-cyan-500/40 text-cyan-400' : 'border-red-500/20 hover:border-red-500/40 text-slate-500 hover:text-slate-300'}`}
                             >
                                 <input id="pub-file" type="file" accept=".pdf" className="hidden" onChange={e => handleFile(e.target.files[0])} />
                                 {file ? (
                                     <>
-                                        <FileText className="w-8 h-8 text-blue-400" />
-                                        <p className="text-sm font-semibold text-white">{file.name}</p>
-                                        <button onClick={e => { e.stopPropagation(); setFile(null); }} className="text-xs text-white/30 hover:text-white/60 flex items-center gap-1 transition-colors">
-                                            <X className="w-3 h-3" /> Remove
-                                        </button>
+                                        <FileText className="w-10 h-10" />
+                                        <div className="text-center">
+                                            <p className="text-sm font-mono text-cyan-400 mb-1">{file.name}</p>
+                                            <button onClick={e => { e.stopPropagation(); setFile(null); }} className="text-[10px] text-slate-500 hover:text-red-400 uppercase tracking-widest transition-colors flex items-center justify-center gap-1 mx-auto mt-2">
+                                                <X className="w-3 h-3" /> Remove File
+                                            </button>
+                                        </div>
                                     </>
                                 ) : (
                                     <>
-                                        <UploadCloud className="w-8 h-8 text-white/20" />
-                                        <p className="text-sm text-white/40 text-center">Drop PDF here<br /><span className="text-xs">or click to browse · Max 15MB</span></p>
+                                        <UploadCloud className="w-10 h-10 opacity-50" />
+                                        <p className="text-sm text-center font-mono uppercase tracking-wider">
+                                            Drop PDF here <br />
+                                            <span className="text-[10px] text-slate-600 mt-2 block normal-case">or click to browse filesystem</span>
+                                        </p>
                                     </>
                                 )}
                             </div>
 
                             {error && (
-                                <div className="flex items-center gap-2 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs rounded-xl px-3 py-2.5">
+                                <div className="mt-4 flex items-center gap-2 bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded p-3 font-mono">
                                     <AlertTriangle className="w-4 h-4 flex-shrink-0" /> {error}
+                                </div>
+                            )}
+
+                            {uploading && (
+                                <div className="mt-6 w-full h-1 bg-cyan-950 rounded overflow-hidden relative">
+                                    <div className="absolute top-0 left-0 h-full bg-cyan-400 shadow-[0_0_15px_#22d3ee] w-1/4 animate-[laserScan_2s_linear_infinite]" />
                                 </div>
                             )}
 
                             <button
                                 onClick={handleUpload}
                                 disabled={!file || uploading}
-                                className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-semibold py-3.5 rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg"
+                                className="w-full mt-6 bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/50 text-cyan-400 font-mono text-sm uppercase tracking-widest py-4 rounded transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(6,182,212,0.15)] hover:shadow-[0_0_30px_rgba(6,182,212,0.3)]"
                             >
-                                {uploading ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Scanning…</> : 'Analyse Document'}
+                                {uploading ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-cyan-500/30 border-t-cyan-400 rounded-full animate-spin" />
+                                        Laser Scanning...
+                                    </>
+                                ) : 'Execute Analysis'}
                             </button>
                         </div>
-                    ) : (
-                        <>
-                            <RiskBar score={riskScore} />
-                            <div className="glass border border-white/8 rounded-2xl p-5 flex-1 overflow-y-auto">
-                                <ClauseList clauses={clauses} onSelect={setSelectedClause} selected={selectedClause} />
-                            </div>
-                            {selectedClause && <ExplanationModal clause={selectedClause} onClose={() => setSelectedClause(null)} />}
-                            <button onClick={() => { setDocumentData(null, [], 0); setFile(null); }} className="text-xs text-white/25 hover:text-white/50 transition-colors mx-auto mt-1">
-                                ← Scan another document
-                            </button>
-                        </>
-                    )}
-                </div>
+                    </div>
+                ) : (
+                    // Split-Screen State
+                    <div className="w-full h-full grid grid-cols-5 bg-slate-900">
+                        {/* Left Column: Risk Feed (40%) */}
+                        <div className="col-span-2 relative z-10 shadow-[5px_0_25px_rgba(0,0,0,0.5)] h-[calc(100vh-64px)] overflow-hidden">
+                            <RiskFeed
+                                clauses={clauses}
+                                summary={summary}
+                                riskScore={riskScore}
+                                selected={selectedClause}
+                                onSelect={setSelectedClause}
+                            />
+                        </div>
 
-                {/* Right: PDF Viewer */}
-                <div className="flex-1 glass border border-white/8 rounded-2xl overflow-hidden min-h-[500px] flex items-center justify-center">
-                    {!activeFileUrl ? (
-                        <div className="text-center text-white/20 flex flex-col items-center gap-4 p-12">
-                            <Shield className="w-16 h-16 opacity-30" />
-                            <p>Your analysed document will appear here with<br />red highlights over risky clauses.</p>
+                        {/* Right Column: PDF Viewer (60%) */}
+                        <div className="col-span-3 h-[calc(100vh-64px)] relative bg-slate-800">
+                            <HighlightViewer />
                         </div>
-                    ) : (
-                        <HighlightViewer />
-                    )}
-                </div>
+                    </div>
+                )}
             </main>
         </div>
     );

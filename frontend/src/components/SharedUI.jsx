@@ -72,11 +72,26 @@ function UploadZone({ onResult, accentColor = 'violet' }) {
         setError('');
         const form = new FormData();
         form.append('file', file);
+        form.append('mode', 'Public');
         try {
-            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/v1/upload`, form, {
+            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/v1/analyze`, form, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
-            onResult(res.data);
+            const docId = res.data.doc_id;
+
+            let isDone = false;
+            while (!isDone) {
+                await new Promise(r => setTimeout(r, 3000));
+                const statusRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/v1/status/${docId}`);
+                const state = statusRes.data.status;
+                if (state === 'COMPLETED') {
+                    onResult(statusRes.data.data);
+                    isDone = true;
+                } else if (state === 'FAILED' || state === 'error') {
+                    setError('Analysis failed on server.');
+                    isDone = true;
+                }
+            }
         } catch (err) {
             setError(err.response?.data?.detail || 'Upload failed. Check that the backend is running.');
         } finally {
