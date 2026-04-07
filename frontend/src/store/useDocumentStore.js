@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 export const useDocumentStore = create((set) => ({
+    docId: null,
     activeFileUrl: null,
     clauses: [],
     riskScore: 0,
@@ -9,37 +10,33 @@ export const useDocumentStore = create((set) => ({
     isProcessing: false,
     scrollTo: null,
 
+    setDocId: (id) => set({ docId: id }),
     setActiveFileUrl: (url) => set({ activeFileUrl: url }),
     setIsProcessing: (val) => set({ isProcessing: val }),
     setScrollTo: (fn) => set({ scrollTo: fn }),
 
-    setDocumentData: (url, clauses, riskScore, summary = '') => set({
+    setDocumentData: (url, clauses, riskScore, summary = '', docId = null) => set((state) => ({
         activeFileUrl: url,
         clauses: clauses ?? [],
         riskScore: riskScore ?? 0,
         summary,
         selectedClause: null,
         isProcessing: false,
-    }),
+        docId: docId !== null ? docId : state.docId,
+    })),
 
-    setSelectedClause: (clause) => set((state) => {
-        if (state.scrollTo && clause) {
-            // Find the highlight format associated with this clause
-            const index = state.clauses.findIndex(c => c.text === clause.text);
-            if (index !== -1) {
-                // Mock a highlight object to satisfy react-pdf-highlighter's scrollTo
-                state.scrollTo({ id: String(index), position: { pageNumber: clause.page || 1 } });
-            }
-        }
-        return { selectedClause: clause };
-    }),
+    setSelectedClause: (clause) => set({ selectedClause: clause }),
 
-    reset: () => set({
-        activeFileUrl: null,
-        clauses: [],
-        riskScore: 0,
-        summary: '',
-        selectedClause: null,
-        isProcessing: false,
-    }),
+    reset: () => {
+        localStorage.removeItem('rakshak_doc_id');
+        set({
+            docId: null,
+            activeFileUrl: null,
+            clauses: [],
+            riskScore: 0,
+            summary: '',
+            selectedClause: null,
+            isProcessing: false,
+        });
+    },
 }));

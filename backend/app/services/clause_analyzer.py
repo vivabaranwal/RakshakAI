@@ -51,7 +51,7 @@ async def analyze_contract_clauses(text_blocks: list, mode: str = "Public"):
                 {"role": "user", "content": indexed_text}
             ],
             response_format={"type": "json_object"},
-            temperature=0.1,
+            temperature=0.0,
         )
         ai_result = response.choices[0].message.content
         

@@ -4,20 +4,19 @@ import 'react-pdf-highlighter/dist/style.css';
 import { useDocumentStore } from '../store/useDocumentStore';
 
 export default function HighlightViewer() {
-    // Force vite reload
     const { activeFileUrl, clauses, selectedClause, setSelectedClause, isProcessing } = useDocumentStore();
-    const [scrollTo, setScrollToState] = useState(null);
+    const [scrollToFn, setScrollToFn] = useState(null);
 
     // Transform backend clauses into react-pdf-highlighter highlight format
     const highlights = clauses.map((c, i) => {
-        // Handle bounding box conversions
-        const box = Array.isArray(c.bbox) ? { x1: c.bbox[0], y1: c.bbox[1], x2: c.bbox[2], y2: c.bbox[3] } : (c.bbox || { x1: 0, y1: 0, x2: 0, y2: 0 });
-        
-        // Ensure bounds exist for scaling calculations (standard letter/A4 approximations if missing)
+        const box = Array.isArray(c.bbox)
+            ? { x1: c.bbox[0], y1: c.bbox[1], x2: c.bbox[2], y2: c.bbox[3] }
+            : (c.bbox || { x1: 0, y1: 0, x2: 0, y2: 0 });
+
         const safeBox = { ...box, width: box.width || 595, height: box.height || 842 };
 
         return {
-            id: String(i),
+            id: String(c.id ?? i),
             content: { text: c.text },
             position: {
                 boundingRect: safeBox,
@@ -29,21 +28,22 @@ export default function HighlightViewer() {
         };
     });
 
+    // Scroll-to-highlight when a clause is selected from the RiskFeed
     useEffect(() => {
-        if (scrollTo && selectedClause) {
-            const index = clauses.findIndex(c => c.text === selectedClause.text);
-            if (index !== -1) {
-                // Issue scroll jump to exact bounding box mapped natively
-                scrollTo(highlights[index]);
+        if (scrollToFn && selectedClause) {
+            const targetId = String(selectedClause.id ?? clauses.indexOf(selectedClause));
+            const target = highlights.find(h => h.id === targetId);
+            if (target) {
+                scrollToFn(target);
             }
         }
-    }, [selectedClause, scrollTo, clauses, highlights]);
+    }, [selectedClause, scrollToFn, clauses, highlights]);
 
     if (!activeFileUrl) return null;
 
     return (
         <div className="h-full w-full overflow-hidden relative">
-            {/* Matrices Scanning Loading State */}
+            {/* Scanning Loading Overlay */}
             {isProcessing && (
                 <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-[2px]">
                     <div className="flex flex-col items-center gap-4 text-cyan-400 bg-slate-950/80 p-6 rounded-2xl border border-cyan-500/30 shadow-[0_0_30px_rgba(34,211,238,0.2)]">
@@ -63,12 +63,11 @@ export default function HighlightViewer() {
                         pdfDocument={pdfDocument}
                         enableAreaSelection={(event) => event.altKey}
                         onScrollChange={() => { }}
-                        scrollRef={(scrollToFn) => { setScrollToState(() => scrollToFn); }}
+                        scrollRef={(fn) => { setScrollToFn(() => fn); }}
                         onSelectionFinished={() => null}
                         highlightTransform={(highlight, index, setTip, hideTip, viewportToScaled, screenshot, isScrolledTo) => {
-                            const isSelected = selectedClause && clauses.indexOf(selectedClause) === parseInt(highlight.id);
-                            
-                            // Let the component map backend bbox into screen-scale bounds
+                            const isSelected = selectedClause && String(selectedClause.id ?? clauses.indexOf(selectedClause)) === highlight.id;
+
                             const scaledRects = highlight.position.rects.map(viewportToScaled);
 
                             return (
@@ -82,7 +81,7 @@ export default function HighlightViewer() {
                                         <div
                                             key={idx}
                                             className={`absolute cursor-pointer transition-all duration-300 ${isSelected ? 'z-40' : 'z-30 hover:z-40'}`}
-                                            onClick={() => setSelectedClause(clauses[parseInt(highlight.id)])}
+                                            onClick={() => setSelectedClause(clauses[parseInt(index)])}
                                             style={{
                                                 left: rect.left,
                                                 top: rect.top,

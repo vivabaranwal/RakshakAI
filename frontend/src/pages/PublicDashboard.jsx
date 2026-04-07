@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
@@ -6,11 +6,11 @@ import {
 } from 'lucide-react';
 import { useDocumentStore } from '../store/useDocumentStore';
 import HighlightViewer from '../components/HighlightViewer';
+import LegalAssistant from '../components/LegalAssistant';
 
 function RiskFeed({ clauses, summary, riskScore, selected, onSelect }) {
     const avgFairness = 100 - riskScore;
     const textColor = riskScore > 60 ? 'text-red-400' : riskScore > 30 ? 'text-amber-400' : 'text-emerald-400';
-
     const shadowColor = riskScore > 60 ? 'rgba(239,68,68,0.6)' : riskScore > 30 ? 'rgba(251,191,36,0.6)' : 'rgba(52,211,153,0.6)';
 
     return (
@@ -32,30 +32,33 @@ function RiskFeed({ clauses, summary, riskScore, selected, onSelect }) {
                 {clauses.length === 0 ? (
                     <div className="text-center py-8 text-slate-500 text-sm font-mono">No critical risks detected.</div>
                 ) : (
-                    clauses.map((c, i) => (
-                        <button
-                            key={i}
-                            onClick={() => onSelect(selected?.text === c.text ? null : c)}
-                            className={`w-full text-left rounded-lg p-4 border transition-all ${selected?.text === c.text
+                    clauses.map((c) => {
+                        const isActive = selected?.id === c.id;
+                        return (
+                            <button
+                                key={c.id}
+                                onClick={() => onSelect(isActive ? null : c)}
+                                className={`w-full text-left rounded-lg p-4 border transition-all ${isActive
                                     ? 'bg-red-500/10 border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.1)]'
                                     : 'bg-slate-900 border-red-500/10 hover:border-red-500/20'
-                                }`}
-                        >
-                            <div className="flex justify-between items-start mb-3">
-                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${c.fairness_score < 40 ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'
-                                    }`}>
-                                    {c.type}
-                                </span>
-                                <span className="text-xs font-mono text-slate-500">Score: {c.fairness_score}/100</span>
-                            </div>
-                            <p className="text-sm text-slate-300 leading-relaxed mb-2">{c.explanation}</p>
-                            <div className="bg-slate-950 p-2 rounded border border-slate-800 border-dashed">
-                                <p className="text-[10px] text-slate-500 italic line-clamp-2 leading-tight">
-                                    "{c.text}"
-                                </p>
-                            </div>
-                        </button>
-                    ))
+                                    }`}
+                            >
+                                <div className="flex justify-between items-start mb-3">
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${c.fairness_score < 40 ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'
+                                        }`}>
+                                        {c.type}
+                                    </span>
+                                    <span className="text-xs font-mono text-slate-500">Score: {c.fairness_score}/100</span>
+                                </div>
+                                <p className="text-sm text-slate-300 leading-relaxed mb-2">{c.explanation}</p>
+                                <div className="bg-slate-950 p-2 rounded border border-slate-800 border-dashed">
+                                    <p className="text-[10px] text-slate-500 italic line-clamp-2 leading-tight">
+                                        "{c.text}"
+                                    </p>
+                                </div>
+                            </button>
+                        );
+                    })
                 )}
             </div>
         </div>
@@ -64,10 +67,80 @@ function RiskFeed({ clauses, summary, riskScore, selected, onSelect }) {
 
 export default function PublicDashboard() {
     const navigate = useNavigate();
-    const { activeFileUrl, clauses, riskScore, summary, setDocumentData, selectedClause, setSelectedClause, reset, setActiveFileUrl, setIsProcessing } = useDocumentStore();
+    const {
+        docId, activeFileUrl, clauses, riskScore, summary,
+        setDocumentData, selectedClause, setSelectedClause,
+        reset, setActiveFileUrl, setIsProcessing, setDocId
+    } = useDocumentStore();
     const [uploading, setUploading] = useState(false);
     const [file, setFile] = useState(null);
     const [error, setError] = useState('');
+
+    // --- Restore from localStorage on refresh (prevents re-calling /analyze) ---
+    useEffect(() => {
+        const savedDocId = localStorage.getItem('rakshak_doc_id');
+        if (savedDocId && !activeFileUrl) {
+            const id = parseInt(savedDocId);
+            const fileUrl = `${import.meta.env.VITE_API_URL}/api/v1/file/${id}`;
+            setActiveFileUrl(fileUrl);
+            setDocId(id);
+            setIsProcessing(true);
+
+            axios.get(`${import.meta.env.VITE_API_URL}/api/v1/status/${id}`)
+                .then(res => {
+                    if (res.data.status === 'COMPLETED') {
+                        setDocumentData(
+                            fileUrl,
+                            res.data.data.clauses,
+                            res.data.data.risk_score,
+                            res.data.data.analysis_summary,
+                            id
+                        );
+                    } else if (res.data.status === 'PROCESSING') {
+                        // Still processing — start polling
+                        pollStatus(id, fileUrl);
+                    } else {
+                        setIsProcessing(false);
+                        localStorage.removeItem('rakshak_doc_id');
+                        setActiveFileUrl(null);
+                    }
+                })
+                .catch(() => {
+                    setIsProcessing(false);
+                    localStorage.removeItem('rakshak_doc_id');
+                    setActiveFileUrl(null);
+                });
+        }
+    }, []);
+
+    const pollStatus = async (id, fileUrl) => {
+        let isDone = false;
+        while (!isDone) {
+            await new Promise(r => setTimeout(r, 3000));
+            try {
+                const statusRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/v1/status/${id}`);
+                const state = statusRes.data.status;
+                if (state === 'COMPLETED') {
+                    setDocumentData(
+                        fileUrl,
+                        statusRes.data.data.clauses,
+                        statusRes.data.data.risk_score,
+                        statusRes.data.data.analysis_summary,
+                        id
+                    );
+                    isDone = true;
+                } else if (state === 'FAILED' || state === 'error') {
+                    setError('Analysis failed on server.');
+                    setIsProcessing(false);
+                    isDone = true;
+                }
+            } catch {
+                setError('Failed to check analysis status.');
+                setIsProcessing(false);
+                isDone = true;
+            }
+        }
+    };
 
     const handleFile = (f) => {
         setError('');
@@ -83,7 +156,7 @@ export default function PublicDashboard() {
     const handleUpload = async () => {
         if (!file) return;
         setUploading(true); setError('');
-        
+
         // Show PDF early while processing
         setActiveFileUrl(URL.createObjectURL(file));
         setIsProcessing(true);
@@ -95,24 +168,15 @@ export default function PublicDashboard() {
             const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/v1/analyze`, form, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
-            const docId = res.data.doc_id;
-            
-            // Polling mechanism
-            let isDone = false;
-            while (!isDone) {
-                await new Promise(r => setTimeout(r, 3000));
-                const statusRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/v1/status/${docId}`);
-                const state = statusRes.data.status;
-                
-                if (state === 'COMPLETED') {
-                    setDocumentData(URL.createObjectURL(file), statusRes.data.data.clauses, statusRes.data.data.risk_score, statusRes.data.data.analysis_summary);
-                    isDone = true;
-                } else if (state === 'FAILED' || state === 'error') {
-                    setError('Analysis failed on server.');
-                    setIsProcessing(false);
-                    isDone = true;
-                }
-            }
+            const id = res.data.doc_id;
+
+            // Persist docId so refresh uses /status instead of re-analyzing
+            localStorage.setItem('rakshak_doc_id', String(id));
+            setDocId(id);
+
+            // Use backend file URL (more stable than blob URL)
+            const fileUrl = `${import.meta.env.VITE_API_URL}/api/v1/file/${id}`;
+            await pollStatus(id, fileUrl);
         } catch (err) {
             setError(err.response?.data?.detail || 'Analysis request failed.');
             setIsProcessing(false);
@@ -121,12 +185,17 @@ export default function PublicDashboard() {
         }
     };
 
+    const handleReset = () => {
+        reset();
+        setFile(null);
+    };
+
     return (
         <div className="h-screen w-full bg-slate-950 text-slate-200 flex flex-col font-sans overflow-hidden">
             {/* Header */}
             <header className="flex-none h-16 border-b border-red-500/10 bg-slate-950/80 px-4 flex items-center justify-between z-10">
                 <div className="flex items-center gap-4">
-                    <button onClick={() => { reset(); navigate('/'); }} className="flex items-center justify-center w-8 h-8 rounded hover:bg-slate-900 text-slate-400 hover:text-cyan-400 transition-colors">
+                    <button onClick={() => { handleReset(); navigate('/'); }} className="flex items-center justify-center w-8 h-8 rounded hover:bg-slate-900 text-slate-400 hover:text-cyan-400 transition-colors">
                         <ArrowLeft className="w-5 h-5" />
                     </button>
                     <div className="w-px h-6 bg-slate-800" />
@@ -136,7 +205,7 @@ export default function PublicDashboard() {
                     </div>
                 </div>
                 {activeFileUrl && (
-                    <button onClick={() => { reset(); setFile(null); }} className="text-xs text-slate-400 hover:text-cyan-400 transition-colors uppercase tracking-wider font-mono">
+                    <button onClick={handleReset} className="text-xs text-slate-400 hover:text-cyan-400 transition-colors uppercase tracking-wider font-mono">
                         [ New Scan ]
                     </button>
                 )}
@@ -147,7 +216,6 @@ export default function PublicDashboard() {
                 {!activeFileUrl ? (
                     // Upload State
                     <div className="w-full h-full flex items-center justify-center p-6 relative">
-                        {/* Background flare */}
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-red-500/5 rounded-full blur-[100px] pointer-events-none" />
 
                         <div className="w-full max-w-lg bg-slate-900/50 border border-red-500/20 p-8 rounded-xl backdrop-blur-sm z-10 shadow-2xl">
@@ -232,6 +300,9 @@ export default function PublicDashboard() {
                     </div>
                 )}
             </main>
+
+            {/* Legal Assistant Chatbot (floating) */}
+            <LegalAssistant />
         </div>
     );
 }

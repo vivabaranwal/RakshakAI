@@ -16,6 +16,7 @@ class Document(Base):
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, index=True)
     s3_url = Column(String)
+    file_path = Column(String, nullable=True)
     status = Column(String, default="PENDING") # PENDING, PROCESSING, DONE, FAILED
     risk_score = Column(Float, default=0.0)
     owner_id = Column(Integer, ForeignKey("users.id"))
@@ -29,7 +30,9 @@ class Clause(Base):
     document_id = Column(Integer, ForeignKey("documents.id"))
     clause_type = Column(String)
     content = Column(String)
-    bounding_box = Column(JSON) # e.g. [{"page": 1, "x1": 10,...}]
+    bounding_box = Column(JSON) # e.g. {"x1": 10, "y1": 20, ...}
+    page = Column(Integer, default=1)
+    fairness_score = Column(Integer, default=50)
     plain_explanation = Column(String, nullable=True)
     is_red_flag = Column(Boolean, default=False)
     
