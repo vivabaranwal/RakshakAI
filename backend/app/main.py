@@ -170,7 +170,7 @@ async def chat_with_document(doc_id: int, request: ChatRequest, db: Session = De
     full_text = "\n".join([b["text"] for b in blocks])[:8000]
 
     try:
-        client = AsyncGroq(api_key=os.environ.get("GROQ_API_KEY"))
+        client = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"))
         response = await client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[

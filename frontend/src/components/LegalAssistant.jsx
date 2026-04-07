@@ -4,6 +4,8 @@ import { MessageSquare, Send, X, Bot, User } from 'lucide-react';
 import axios from 'axios';
 import { useDocumentStore } from '../store/useDocumentStore';
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
+
 function TypewriterText({ text, speed = 12 }) {
     const [displayed, setDisplayed] = useState('');
     const [showCursor, setShowCursor] = useState(true);
@@ -64,7 +66,7 @@ export default function LegalAssistant() {
 
         try {
             const res = await axios.post(
-                `${import.meta.env.VITE_API_URL}/api/v1/chat/${docId}`,
+                `${API_URL}/chat/${docId}`,
                 { query }
             );
             const aiId = `a${nextId.current++}`;

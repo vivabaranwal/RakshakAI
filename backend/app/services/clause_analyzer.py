@@ -43,7 +43,7 @@ async def analyze_contract_clauses(text_blocks: list, mode: str = "Public"):
     overall_risk = 50
 
     try:
-        client = AsyncGroq(api_key=os.environ.get("GROQ_API_KEY"))
+        client = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"))
         response = await client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[

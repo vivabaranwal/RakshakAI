@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { ArrowLeft, Eye, UploadCloud, AlertTriangle, CheckCircle2, FileText, X } from 'lucide-react';
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
+
 function PageShell({ icon: Icon, gradient, title, subtitle, children }) {
     const navigate = useNavigate();
     return (
@@ -69,7 +71,7 @@ function UploadZone({ onResult, accentColor = 'violet' }) {
         form.append('file', file);
         form.append('mode', 'Public');
         try {
-            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/v1/analyze`, form, {
+            const res = await axios.post(`${API_URL}/analyze`, form, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             const docId = res.data.doc_id;
@@ -77,7 +79,7 @@ function UploadZone({ onResult, accentColor = 'violet' }) {
             let isDone = false;
             while (!isDone) {
                 await new Promise(r => setTimeout(r, 3000));
-                const statusRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/v1/status/${docId}`);
+                const statusRes = await axios.get(`${API_URL}/status/${docId}`);
                 const state = statusRes.data.status;
                 if (state === 'COMPLETED') {
                     onResult(statusRes.data.data);

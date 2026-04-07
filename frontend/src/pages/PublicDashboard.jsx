@@ -65,6 +65,8 @@ function RiskFeed({ clauses, summary, riskScore, selected, onSelect }) {
     );
 }
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
+
 export default function PublicDashboard() {
     const navigate = useNavigate();
     const {
@@ -81,12 +83,12 @@ export default function PublicDashboard() {
         const savedDocId = localStorage.getItem('rakshak_doc_id');
         if (savedDocId && !activeFileUrl) {
             const id = parseInt(savedDocId);
-            const fileUrl = `${import.meta.env.VITE_API_URL}/api/v1/file/${id}`;
+            const fileUrl = `${API_URL}/file/${id}`;
             setActiveFileUrl(fileUrl);
             setDocId(id);
             setIsProcessing(true);
 
-            axios.get(`${import.meta.env.VITE_API_URL}/api/v1/status/${id}`)
+            axios.get(`${API_URL}/status/${id}`)
                 .then(res => {
                     if (res.data.status === 'COMPLETED') {
                         setDocumentData(
@@ -118,7 +120,7 @@ export default function PublicDashboard() {
         while (!isDone) {
             await new Promise(r => setTimeout(r, 3000));
             try {
-                const statusRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/v1/status/${id}`);
+                const statusRes = await axios.get(`${API_URL}/status/${id}`);
                 const state = statusRes.data.status;
                 if (state === 'COMPLETED') {
                     setDocumentData(
@@ -165,7 +167,7 @@ export default function PublicDashboard() {
         form.append('file', file);
         form.append('mode', 'Public');
         try {
-            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/v1/analyze`, form, {
+            const res = await axios.post(`${API_URL}/analyze`, form, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
             const id = res.data.doc_id;
@@ -175,7 +177,7 @@ export default function PublicDashboard() {
             setDocId(id);
 
             // Use backend file URL (more stable than blob URL)
-            const fileUrl = `${import.meta.env.VITE_API_URL}/api/v1/file/${id}`;
+            const fileUrl = `${API_URL}/file/${id}`;
             await pollStatus(id, fileUrl);
         } catch (err) {
             setError(err.response?.data?.detail || 'Analysis request failed.');
