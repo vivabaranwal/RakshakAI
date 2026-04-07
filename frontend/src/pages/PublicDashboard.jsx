@@ -191,26 +191,7 @@ export default function PublicDashboard() {
     };
 
     return (
-        <div className="h-screen w-full bg-slate-950 text-slate-200 flex flex-col font-sans overflow-hidden">
-            {/* Header */}
-            <header className="flex-none h-16 border-b border-red-500/10 bg-slate-950/80 px-4 flex items-center justify-between z-10">
-                <div className="flex items-center gap-4">
-                    <button onClick={() => { handleReset(); navigate('/'); }} className="flex items-center justify-center w-8 h-8 rounded hover:bg-slate-900 text-slate-400 hover:text-cyan-400 transition-colors">
-                        <ArrowLeft className="w-5 h-5" />
-                    </button>
-                    <div className="w-px h-6 bg-slate-800" />
-                    <div className="flex items-center gap-2">
-                        <Shield className="w-5 h-5 text-cyan-500" />
-                        <span className="font-bold tracking-wide text-slate-100 uppercase text-sm font-mono">Rakshak / Public Shield</span>
-                    </div>
-                </div>
-                {activeFileUrl && (
-                    <button onClick={handleReset} className="text-xs text-slate-400 hover:text-cyan-400 transition-colors uppercase tracking-wider font-mono">
-                        [ New Scan ]
-                    </button>
-                )}
-            </header>
-
+        <div className="h-screen w-full bg-slate-950 text-slate-200 flex flex-col font-sans overflow-hidden pt-16">
             {/* Main Content */}
             <main className="flex-1 flex overflow-hidden">
                 {!activeFileUrl ? (

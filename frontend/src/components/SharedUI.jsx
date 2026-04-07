@@ -11,12 +11,7 @@ function PageShell({ icon: Icon, gradient, title, subtitle, children }) {
                 <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-violet-600/8 rounded-full blur-[120px]" />
             </div>
 
-            <div className="relative z-10 max-w-5xl mx-auto px-6 py-6">
-                {/* Nav */}
-                <button onClick={() => navigate('/')} className="flex items-center gap-2 text-white/40 hover:text-white text-sm transition-colors mb-10">
-                    <ArrowLeft className="w-4 h-4" /> Back to Home
-                </button>
-
+            <div className="relative z-10 max-w-5xl mx-auto px-6 pt-24 pb-6">
                 {/* Header */}
                 <div className="flex items-center gap-4 mb-10">
                     <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-xl`}>

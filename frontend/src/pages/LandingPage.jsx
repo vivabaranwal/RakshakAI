@@ -54,21 +54,10 @@ export default function LandingPage() {
                 <div className="absolute bottom-[-10%] right-[10%] w-[400px] h-[400px] bg-violet-600/10 rounded-full blur-[100px]" />
             </div>
 
-            {/* Nav */}
-            <header className="relative z-10 px-6 py-5 flex items-center justify-between max-w-7xl mx-auto w-full">
-                <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center">
-                        <Shield className="w-4.5 h-4.5 text-white" strokeWidth={2.5} />
-                    </div>
-                    <span className="font-bold text-lg tracking-tight">Rakshak <span className="gradient-text">AI</span></span>
-                </div>
-                <span className="text-xs font-medium text-white/40 border border-white/10 px-3 py-1 rounded-full">
-                    Beta · v1.0
-                </span>
-            </header>
+            {/* Nav removed for global Navbar */}
 
             {/* Hero */}
-            <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 pt-8 pb-16">
+            <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 pt-24 pb-16">
                 <div className="text-center mb-16 animate-fade-up">
                     <div className="inline-flex items-center gap-2 text-xs font-medium text-blue-400 bg-blue-500/10 border border-blue-500/20 rounded-full px-4 py-1.5 mb-6">
                         <Sparkles className="w-3.5 h-3.5" />
