@@ -8,28 +8,35 @@ import { useDocumentStore } from '../store/useDocumentStore';
 import HighlightViewer from '../components/HighlightViewer';
 import LegalAssistant from '../components/LegalAssistant';
 
-function RiskFeed({ clauses, summary, riskScore, selected, onSelect }) {
-    const avgFairness = 100 - riskScore;
-    const textColor = riskScore > 60 ? 'text-red-400' : riskScore > 30 ? 'text-amber-400' : 'text-emerald-400';
-    const shadowColor = riskScore > 60 ? 'rgba(239,68,68,0.6)' : riskScore > 30 ? 'rgba(251,191,36,0.6)' : 'rgba(52,211,153,0.6)';
+function RiskFeed({ clauses, summary, riskScore, selected, onSelect, isProcessing }) {
+    const avgFairness = riskScore !== null ? 100 - riskScore : '--';
+    const textColor = riskScore !== null && riskScore > 60 ? 'text-red-400' : riskScore !== null && riskScore > 30 ? 'text-amber-400' : 'text-emerald-400';
+    const shadowColor = riskScore !== null && riskScore > 60 ? 'rgba(239,68,68,0.6)' : riskScore !== null && riskScore > 30 ? 'rgba(251,191,36,0.6)' : 'rgba(52,211,153,0.6)';
+
+    const displayColor = riskScore === null || isProcessing ? 'text-cyan-400' : textColor;
+    const displayShadow = riskScore === null || isProcessing ? 'rgba(34,211,238,0.6)' : shadowColor;
 
     return (
         <div className="flex flex-col h-full bg-slate-950/50 border-r border-red-500/10 p-6 overflow-y-auto w-full custom-scrollbar">
             <div className="mb-6 pb-6 border-b border-red-500/10">
                 <h2 className="text-xl font-bold font-mono text-slate-100 mb-2">Analysis Results</h2>
                 <div className="flex items-center gap-3">
-                    <span className={`text-3xl font-black ${textColor}`} style={{ filter: `drop-shadow(0 0 12px ${shadowColor})` }}>{avgFairness}</span>
+                    <span className={`text-3xl font-black ${displayColor}`} style={{ filter: `drop-shadow(0 0 12px ${displayShadow})` }}>
+                        {isProcessing ? '--' : avgFairness}
+                    </span>
                     <span className="text-xs text-slate-400 uppercase tracking-widest">/100 Fairness</span>
                 </div>
-                {summary && <p className="text-sm text-slate-400 mt-3 border-l-2 border-cyan-500/50 pl-3 lowercase font-mono">{summary}</p>}
+                {summary && !isProcessing && <p className="text-sm text-slate-400 mt-3 border-l-2 border-cyan-500/50 pl-3 lowercase font-mono">{summary}</p>}
             </div>
 
             <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-4 font-mono">
-                Identified Red Flags ({clauses.length})
+                {isProcessing ? 'Analyzing Document...' : `Identified Red Flags (${clauses.length})`}
             </h3>
 
             <div className="flex flex-col gap-3">
-                {clauses.length === 0 ? (
+                {isProcessing ? (
+                    <div className="text-center py-8 text-cyan-500 text-sm font-mono animate-pulse">Scanning clauses...</div>
+                ) : clauses.length === 0 ? (
                     <div className="text-center py-8 text-slate-500 text-sm font-mono">No critical risks detected.</div>
                 ) : (
                     clauses.map((c) => {
@@ -70,7 +77,7 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
 export default function PublicDashboard() {
     const navigate = useNavigate();
     const {
-        docId, activeFileUrl, clauses, riskScore, summary,
+        docId, activeFileUrl, clauses, riskScore, summary, isProcessing,
         setDocumentData, selectedClause, setSelectedClause,
         reset, setActiveFileUrl, setIsProcessing, setDocId
     } = useDocumentStore();
@@ -273,6 +280,7 @@ export default function PublicDashboard() {
                                 riskScore={riskScore}
                                 selected={selectedClause}
                                 onSelect={setSelectedClause}
+                                isProcessing={isProcessing}
                             />
                         </div>
 

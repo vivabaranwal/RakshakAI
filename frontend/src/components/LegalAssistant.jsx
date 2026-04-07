@@ -175,7 +175,7 @@ export default function LegalAssistant() {
                                     value={input}
                                     onChange={(e) => setInput(e.target.value)}
                                     onKeyDown={handleKeyDown}
-                                    placeholder={docId ? "Ask about your contract..." : "Upload a document first..."}
+                                    placeholder={docId ? "Ask me anything about the document." : "Upload a PDF."}
                                     disabled={!docId || isLoading}
                                     className="flex-1 bg-slate-800/50 border border-slate-700/50 rounded-lg px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500/40 focus:shadow-[0_0_10px_rgba(34,211,238,0.1)] transition-all disabled:opacity-40 font-mono"
                                 />
