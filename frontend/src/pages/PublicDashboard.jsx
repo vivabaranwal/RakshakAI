@@ -72,7 +72,10 @@ function RiskFeed({ clauses, summary, riskScore, selected, onSelect, isProcessin
     );
 }
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
+const envUrl = import.meta.env.VITE_API_URL;
+const API_URL = envUrl 
+    ? (envUrl.endsWith('/api/v1') ? envUrl : `${envUrl.replace(/\/+$/, '')}/api/v1`)
+    : "http://localhost:8000/api/v1";
 
 export default function PublicDashboard() {
     const navigate = useNavigate();
@@ -178,10 +181,10 @@ export default function PublicDashboard() {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
             const id = res.data.doc_id;
-
-            // Persist docId so refresh uses /status instead of re-analyzing
-            localStorage.setItem('rakshak_doc_id', String(id));
-            setDocId(id);
+            console.log("Upload successful, received docId:", id);
+            if (id) {
+                setDocId(id);
+            }
 
             // Use backend file URL (more stable than blob URL)
             const fileUrl = `${API_URL}/file/${id}`;

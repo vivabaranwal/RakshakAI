@@ -3,7 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { ArrowLeft, Eye, UploadCloud, AlertTriangle, CheckCircle2, FileText, X } from 'lucide-react';
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
+const envUrl = import.meta.env.VITE_API_URL;
+const API_URL = envUrl 
+    ? (envUrl.endsWith('/api/v1') ? envUrl : `${envUrl.replace(/\/+$/, '')}/api/v1`)
+    : "http://localhost:8000/api/v1";
 
 function PageShell({ icon: Icon, gradient, title, subtitle, children }) {
     const navigate = useNavigate();

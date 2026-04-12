@@ -4,7 +4,10 @@ import { MessageSquare, Send, X, Bot, User } from 'lucide-react';
 import axios from 'axios';
 import { useDocumentStore } from '../store/useDocumentStore';
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
+const envUrl = import.meta.env.VITE_API_URL;
+const API_URL = envUrl 
+    ? (envUrl.endsWith('/api/v1') ? envUrl : `${envUrl.replace(/\/+$/, '')}/api/v1`)
+    : "http://localhost:8000/api/v1";
 
 function TypewriterText({ text, speed = 12 }) {
     const [displayed, setDisplayed] = useState('');
@@ -46,6 +49,7 @@ export default function LegalAssistant() {
     const inputRef = useRef(null);
     const nextId = useRef(1);
     const docId = useDocumentStore(s => s.docId);
+    console.log("LegalAssistant render, docId from store:", docId);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
