@@ -2,7 +2,7 @@
 
 Rakshak AI is an AI-powered legal contract analysis platform designed to help users quickly identify risks, understand complex legal jargon, and analyze contracts with ease. Built with a robust backend using Python/FastAPI and a modern React frontend, Rakshak AI provides deterministic clause analysis, interactive PDF visualization, and a conversational interface to chat directly with your document.
 
-## ✨ Features
+## Features
 
 - **Document Analysis**: Upload PDF agreements and automatically extract text alongside visual bounding box coordinates.
 - **Risk Assessment**: Uses advanced LLMs (via Groq API) to extract clauses, assign fairness scores, and flag potential high-risk pitfalls.
@@ -10,7 +10,7 @@ Rakshak AI is an AI-powered legal contract analysis platform designed to help us
 - **Talk to PDF (RAG Chatbot)**: A cyber-legal themed chat interface allowing users to query specific terms and summarize the uploaded agreement.
 - **Persistent State**: Background processing and SQLite database to save your document analysis securely.
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 ### Frontend
 - **React 19 & Vite**
