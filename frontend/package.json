@@ -14,7 +14,7 @@
     "clsx": "^2.1.1",
     "framer-motion": "^12.34.3",
     "lucide-react": "^0.575.0",
-    "pdfjs-dist": "^3.4.120",
+    "pdfjs-dist": "4.4.168",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-pdf-highlighter": "^8.0.0-rc.0",
