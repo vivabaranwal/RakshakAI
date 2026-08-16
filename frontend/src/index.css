@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -17,46 +15,143 @@
   }
 
   body {
-    font-family: 'Inter', sans-serif;
-    @apply bg-[#0a0f1e] text-white antialiased;
+    background-color: #F4ECD8;
+    color: #1A0F07;
+    font-family: 'Instrument Sans', sans-serif;
+    @apply antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: 'Cormorant Garamond', serif;
+    letter-spacing: 0.05em;
+    color: #1A0F07;
+  }
+
+  ::selection {
+    background: #1A0F07;
+    color: #F4ECD8;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #F4ECD8;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #1A0F07;
+  }
+
+  /* Firefox */
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: #1A0F07 #F4ECD8;
   }
 }
 
+/* --- PDF clause highlights -------------------------------------------
+   react-pdf-highlighter ships a fixed yellow background on .Highlight__part.
+   These rules override it with our severity colours, driven by the --hl
+   custom property set on each highlight wrapper.
+
+   These stay red/amber/blue rather than parchment browns: they sit on the
+   white PDF page and carry the fraud/alert/caution meaning, which a
+   monochrome scale could not distinguish. */
+.rakshak-highlight {
+  cursor: pointer;
+}
+
+.rakshak-highlight .Highlight__part {
+  background: var(--hl) !important;
+  border-radius: 0;
+  transition: background 180ms ease, box-shadow 180ms ease;
+  mix-blend-mode: multiply;
+}
+
+.rakshak-highlight:hover .Highlight__part,
+.rakshak-highlight.is-active .Highlight__part {
+  background: var(--hl-active) !important;
+}
+
+.rakshak-highlight.is-active .Highlight__part {
+  box-shadow: 0 0 0 1.5px #1A0F07;
+}
+
+/* The library also renders a coloured pop-up arrow we don't use. */
+.rakshak-highlight .Highlight__popup {
+  display: none;
+}
+
 @layer utilities {
+
+  /* --- Editorial surfaces -------------------------------------------- */
+  .latte-card {
+    @apply bg-latte-surface border-2 border-latte-border rounded-none;
+  }
+
+  .latte-card-hover {
+    @apply transition-colors duration-200;
+  }
+
+  .latte-card-hover:hover {
+    @apply bg-latte-bg border-latte-accent;
+  }
+
+  /* Left accent bar gives depth without softness. */
+  .latte-bar {
+    @apply border-l-4 border-latte-border border-t border-r border-b border-latte-muted rounded-none bg-latte-surface;
+  }
+
+  .latte-inner {
+    @apply border border-latte-muted rounded-none bg-latte-bg;
+  }
+
+  /* Kept for API compatibility with existing markup. */
   .glass {
-    background: rgba(255, 255, 255, 0.04);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: #EEE2C8;
+    border: 2px solid #1A0F07;
+    border-radius: 0;
   }
 
   .glass-hover {
-    transition: all 0.3s ease;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
   }
 
   .glass-hover:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.15);
-    transform: translateY(-4px);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    background: #F4ECD8;
+    border-color: #7A4E2D;
   }
 
-  .glow-blue {
-    box-shadow: 0 0 40px rgba(59, 130, 246, 0.25);
-  }
-
-  .glow-purple {
-    box-shadow: 0 0 40px rgba(139, 92, 246, 0.25);
-  }
-
+  .glow-blue,
+  .glow-purple,
   .glow-emerald {
-    box-shadow: 0 0 40px rgba(16, 185, 129, 0.25);
+    box-shadow: none;
   }
 
   .gradient-text {
-    background: linear-gradient(135deg, #60a5fa, #a78bfa);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: #7A4E2D;
+  }
+
+  /* --- Motion -------------------------------------------------------- */
+  .animate-fadeIn {
+    animation: fadeIn 0.5s ease-out both;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   .animate-fade-up {
@@ -67,6 +162,22 @@
     from {
       opacity: 0;
       transform: translateY(24px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fadeSlideUp {
+    animation: fadeSlideUp 0.4s ease-out both;
+  }
+
+  @keyframes fadeSlideUp {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
     }
 
     to {
@@ -92,26 +203,30 @@
   }
 
   .dot-grid {
-    background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+    background-image: radial-gradient(rgba(26, 15, 7, 0.06) 1px, transparent 1px);
     background-size: 28px 28px;
   }
 
+  /* --- Scrollbars ---------------------------------------------------- */
   .custom-scrollbar::-webkit-scrollbar {
     width: 6px;
   }
+
   .custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
+    background: #F4ECD8;
   }
+
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(148, 163, 184, 0.15);
-    border-radius: 3px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(148, 163, 184, 0.3);
+    background: #1A0F07;
   }
 
   @keyframes laserScan {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(400%); }
+    0% {
+      transform: translateX(-100%);
+    }
+
+    100% {
+      transform: translateX(400%);
+    }
   }
 }

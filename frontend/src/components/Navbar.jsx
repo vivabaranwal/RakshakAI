@@ -1,69 +1,46 @@
 import { Link, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Shield, Plus } from 'lucide-react';
-import { useDocumentStore } from '../store/useDocumentStore';
+import { Shield } from 'lucide-react';
+
+const LINKS = [
+    { name: 'Home', path: '/' },
+    { name: 'Personal', path: '/personal' },
+    { name: 'Enterprise', path: '/enterprise' },
+    { name: 'Govt', path: '/govt' },
+    { name: 'About', path: '/about' },
+    { name: 'Contact', path: '/contact' },
+];
 
 export default function Navbar() {
-    const location = useLocation();
-    const { activeFileUrl, reset } = useDocumentStore();
-
-    const handleNewScan = () => {
-        reset();
-    };
-
-    const navLinks = [
-        { name: 'Home', path: '/' },
-        { name: 'Public Shield', path: '/public' },
-        { name: 'About', path: '/about' },
-        { name: 'Contact Us', path: '/contact' },
-    ];
+    const { pathname } = useLocation();
 
     return (
-        <nav className="fixed top-0 left-0 w-full h-16 z-50 bg-slate-950/80 backdrop-blur-md border-b border-slate-800 flex items-center justify-between px-6">
-            {/* Logo */}
-            <Link to="/" className="flex items-center gap-2 group">
-                <div className="w-9 h-9 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center group-hover:bg-cyan-500/20 group-hover:shadow-[0_0_15px_rgba(34,211,238,0.3)] transition-all">
-                    <Shield className="w-5 h-5 text-cyan-400" />
+        <nav className="fixed left-0 top-0 z-50 flex h-16 w-full items-center justify-between border-b-2 border-latte-ink bg-latte-bg px-10">
+            <Link to="/" className="group flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-none border-2 border-latte-ink bg-latte-ink transition-colors group-hover:bg-latte-accent group-hover:border-latte-accent">
+                    <Shield className="h-4 w-4 text-latte-bg" />
                 </div>
-                <span className="font-bold tracking-wide text-slate-100 uppercase text-sm font-mono group-hover:text-cyan-400 transition-colors">
+                <span className="font-serif text-2xl font-medium uppercase tracking-[0.15em] text-latte-ink">
                     Rakshak AI
                 </span>
             </Link>
 
-            {/* Links */}
-            <div className="flex items-center gap-6">
-                {navLinks.map((link) => (
-                    <motion.div
-                        key={link.name}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                    >
+            <div className="hidden items-center gap-7 md:flex">
+                {LINKS.map((link) => {
+                    const active = pathname === link.path;
+                    return (
                         <Link
+                            key={link.path}
                             to={link.path}
-                            className={`text-sm font-mono tracking-wide transition-all ${
-                                location.pathname === link.path
-                                    ? 'text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]'
-                                    : 'text-slate-400 hover:text-slate-200'
+                            className={`font-sans text-xs font-semibold uppercase tracking-[0.2em] transition-colors ${
+                                active
+                                    ? 'text-latte-ink underline decoration-latte-accent decoration-2 underline-offset-[6px]'
+                                    : 'text-latte-subtext hover:text-latte-ink'
                             }`}
                         >
                             {link.name}
                         </Link>
-                    </motion.div>
-                ))}
-            </div>
-
-            {/* Right Side / New Scan */}
-            <div className="flex items-center">
-                {location.pathname === '/public' && activeFileUrl && (
-                    <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={handleNewScan}
-                        className="flex items-center gap-2 bg-slate-800/80 hover:bg-cyan-900/40 border border-slate-700 hover:border-cyan-500/50 text-slate-300 hover:text-cyan-400 transition-all px-4 py-2 rounded-lg text-xs font-mono uppercase tracking-widest shadow-[0_4px_10px_rgba(0,0,0,0.3)]"
-                    >
-                        <Plus className="w-3.5 h-3.5" /> New Scan
-                    </motion.button>
-                )}
+                    );
+                })}
             </div>
         </nav>
     );
