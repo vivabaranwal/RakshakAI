@@ -1,104 +1,171 @@
-import os
+"""LLM-backed clause analysis grounded in Indian law."""
 import json
-import re
+import logging
 from groq import AsyncGroq
-from dotenv import load_dotenv
 
-load_dotenv()
+from ..config import GROQ_API_KEY, GROQ_MODEL
+from .indian_law import build_system_prompt
 
-async def analyze_contract_clauses(text_blocks: list, mode: str = "Public"):
+logger = logging.getLogger(__name__)
+
+# Blocks shorter than this are headings/page numbers, not clauses.
+MIN_BLOCK_CHARS = 40
+# Cap what we send so a long contract still fits the context window.
+MAX_BLOCKS = 120
+MAX_BLOCK_CHARS = 1200
+
+SEVERITY_BY_SCORE = ((25, "FRAUD"), (50, "ALERT"), (75, "CAUTION"))
+VALID_SEVERITIES = {"FRAUD", "ALERT", "CAUTION"}
+
+# Types the UI knows how to label. Anything else is folded into OTHER so the
+# frontend never renders an unexpected token.
+VALID_TYPES = {
+    "LIABILITY", "PENALTY", "AUTO_RENEWAL", "NON_COMPETE", "INDEMNITY",
+    "FINANCIAL", "TERMINATION", "JURISDICTION", "ARBITRATION", "DATA_PRIVACY",
+    "IP_RIGHTS", "CONFIDENTIALITY", "PAYMENT_TERMS", "PROCUREMENT", "OTHER",
+}
+
+
+class AnalysisError(Exception):
+    """Raised when analysis cannot be completed. Caller marks the doc FAILED."""
+
+
+def _severity_for(score: int) -> str:
+    for threshold, label in SEVERITY_BY_SCORE:
+        if score <= threshold:
+            return label
+    return "CAUTION"
+
+
+def _select_blocks(text_blocks: list) -> list:
+    """Pick substantive blocks, keeping their original indices for bbox lookup."""
+    candidates = [
+        (i, b) for i, b in enumerate(text_blocks)
+        if len(b.get("text", "").strip()) >= MIN_BLOCK_CHARS
+    ]
+    # Prefer longer blocks when we must truncate — they carry the real terms.
+    if len(candidates) > MAX_BLOCKS:
+        candidates = sorted(candidates, key=lambda p: -len(p[1]["text"]))[:MAX_BLOCKS]
+        candidates.sort(key=lambda p: p[0])
+    return candidates
+
+
+async def analyze_contract_clauses(text_blocks: list, mode: str = "Personal") -> dict:
     """
-    Sends indexed text blocks to the Groq API (Llama 3.3).
-    Forces the model to return a strict JSON object with a 'clauses' array 
-    so that the frontend can filter and display ONLY the risky sections.
+    Analyse a document's text blocks and return risky clauses with Indian-law
+    grounding and suggested corrected wording.
+
+    Raises AnalysisError when the document is unreadable or the LLM is unreachable,
+    so the caller can mark the document FAILED rather than storing a fake result.
     """
+    if not GROQ_API_KEY:
+        raise AnalysisError(
+            "GROQ_API_KEY is not configured on the server. "
+            "Set it in the backend environment to enable analysis."
+        )
 
-    # Build a numbered block list for the AI to reference by index
-    indexed_text = "\n".join(
-        [f"[{i}] {b['text']}" for i, b in enumerate(text_blocks[:20])]
+    candidates = _select_blocks(text_blocks)
+    if not candidates:
+        # A scanned/image PDF yields no extractable text.
+        raise AnalysisError(
+            "No readable text found in this PDF. It may be a scanned image — "
+            "please upload a text-based PDF."
+        )
+
+    indexed_text = "\n\n".join(
+        f"[{i}] {b['text'][:MAX_BLOCK_CHARS]}" for i, b in candidates
     )
-
-    system_prompt = (
-        f"You are Rakshak AI, a legal-risk scanner (Mode: {mode}). "
-        "You will receive NUMBERED text blocks from an Indian legal document. "
-        "Your ONLY job: identify the top 3-5 most unfair or risky blocks. "
-        "OUTPUT FORMAT: You must return a JSON object with a single key 'clauses', containing an array of objects. "
-        "Do NOT include any markdown formatting, only a valid JSON object. "
-        '{\n'
-        '  "clauses": [\n'
-        '    {\n'
-        '      "block_index": <integer — the [N] number of the risky block>,\n'
-        '      "type": "<one of: LIABILITY | PENALTY | AUTO_RENEWAL | NON_COMPETE | INDEMNITY | FINANCIAL | TERMINATION | OTHER>",\n'
-        '      "explanation": "<1-2 sentence plain-English explanation of why this clause is unfair>",\n'
-        '      "fairness_score": <integer 0-100, where 0=very unfair, 100=totally fair>\n'
-        '    }\n'
-        '  ]\n'
-        '}\n'
-        "RULES: Only return the JSON. "
-        "Do NOT repeat the clause text. "
-        "Only flag genuine risks, not standard legal boilerplate."
-    )
-
-    flagged_clauses = []
-    overall_risk = 50
 
     try:
-        client = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"))
+        client = AsyncGroq(api_key=GROQ_API_KEY)
         response = await client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model=GROQ_MODEL,
             messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": indexed_text}
+                {"role": "system", "content": build_system_prompt(mode)},
+                {"role": "user", "content": indexed_text},
             ],
             response_format={"type": "json_object"},
-            temperature=0.0,
+            temperature=0.1,
         )
-        ai_result = response.choices[0].message.content
-        
-        # Parse the JSON response
-        parsed = json.loads(ai_result)
-        clauses_array = parsed.get("clauses", [])
-        
-        for item in clauses_array:
-            idx = item.get("block_index", -1)
-            block = text_blocks[idx] if 0 <= idx < len(text_blocks) else {}
-            flagged_clauses.append({
-                "type": item.get("type", "RISK"),
-                "explanation": item.get("explanation", ""),
-                "fairness_score": int(item.get("fairness_score", 50)),
-                "text": block.get("text", ""),
-                "page": block.get("page", 1),
-                "bbox": block.get("bbox"),
-            })
-            
-    except (json.JSONDecodeError, ValueError):
-         flagged_clauses = [{
-            "type": "PARSE_ERROR",
-            "explanation": "The AI returned an unstructured response. Try uploading again.",
-            "fairness_score": 50,
-            "text": "",
-            "page": 1,
-            "bbox": None,
-        }]
-    except Exception as e:
-        flagged_clauses = [{
-            "type": "CONNECTION_ERROR",
-            "explanation": f"Could not reach Groq API: {str(e)}.",
-            "fairness_score": 50,
-            "text": "",
-            "page": 1,
-            "bbox": None,
-        }]
+        parsed = json.loads(response.choices[0].message.content)
+    except json.JSONDecodeError as exc:
+        logger.exception("LLM returned non-JSON output")
+        raise AnalysisError("The AI returned an unreadable response. Please try again.") from exc
+    except Exception as exc:
+        logger.exception("Groq API call failed")
+        raise AnalysisError(f"Could not reach the analysis service: {exc}") from exc
 
-    # Derive overall risk score from per-clause scores
-    if flagged_clauses and flagged_clauses[0]["type"] not in ["PARSE_ERROR", "CONNECTION_ERROR"]:
-        avg_fairness = sum(c["fairness_score"] for c in flagged_clauses) / len(flagged_clauses)
-        overall_risk = max(0, min(100, 100 - int(avg_fairness)))
+    flagged = []
+    for item in parsed.get("clauses", []):
+        try:
+            idx = int(item.get("block_index", -1))
+        except (TypeError, ValueError):
+            idx = -1
+        if not (0 <= idx < len(text_blocks)):
+            # Hallucinated index — there is no clause to show or highlight.
+            logger.warning("Skipping clause with out-of-range block_index %s", idx)
+            continue
+        block = text_blocks[idx]
+
+        try:
+            score = int(item.get("fairness_score", 50))
+        except (TypeError, ValueError):
+            score = 50
+        score = max(0, min(100, score))
+
+        # Trust the model's severity only if it's valid and consistent with the
+        # score; otherwise derive it, so the UI's colour coding never lies.
+        severity = str(item.get("severity", "")).upper()
+        if severity not in VALID_SEVERITIES or severity != _severity_for(score):
+            severity = _severity_for(score)
+
+        # Normalise the type; unknown labels (e.g. UNILATERAL_VARIATION) become OTHER.
+        raw_type = str(item.get("type", "OTHER")).upper().replace(" ", "_")
+        clause_type = raw_type if raw_type in VALID_TYPES else "OTHER"
+
+        # A clause with no cited basis still has a real explanation; fall back to
+        # a neutral label rather than rendering an empty line in the UI.
+        legal_basis = str(item.get("legal_basis", "")).strip()
+        if not legal_basis:
+            legal_basis = "General principles of Indian contract law"
+
+        flagged.append({
+            "type": clause_type,
+            "severity": severity,
+            "legal_basis": legal_basis,
+            "explanation": item.get("explanation", ""),
+            "suggested_clause": item.get("suggested_clause", ""),
+            "fairness_score": score,
+            "text": block.get("text", ""),
+            "page": block.get("page", 1),
+            "bbox": block.get("bbox"),
+        })
+
+    # Sort worst-first so the risk feed leads with the most dangerous clause.
+    flagged.sort(key=lambda c: c["fairness_score"])
+
+    if flagged:
+        avg_fairness = sum(c["fairness_score"] for c in flagged) / len(flagged)
+        risk_score = max(0, min(100, round(100 - avg_fairness)))
     else:
-        overall_risk = 50
+        risk_score = 0
+
+    fraud = sum(1 for c in flagged if c["severity"] == "FRAUD")
+    alert = sum(1 for c in flagged if c["severity"] == "ALERT")
+
+    if not flagged:
+        summary = "No significant risks detected under Indian law."
+    else:
+        parts = []
+        if fraud:
+            parts.append(f"{fraud} likely void/unenforceable")
+        if alert:
+            parts.append(f"{alert} heavily one-sided")
+        detail = f" ({', '.join(parts)})" if parts else ""
+        summary = f"{len(flagged)} risky clause(s) identified{detail}."
 
     return {
-        "risk_score": overall_risk,
-        "analysis_summary": f"{len(flagged_clauses)} risk(s) detected by Rakshak AI.",
-        "clauses": flagged_clauses,
+        "risk_score": risk_score,
+        "analysis_summary": summary,
+        "clauses": flagged,
     }
