@@ -23,7 +23,12 @@ export default defineConfig([
       },
     },
     rules: {
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      // Also ignore lowercase identifiers used only as JSX namespaces
+      // (e.g. `motion` in `<motion.div>`), which core no-unused-vars misses.
+      'no-unused-vars': [
+        'error',
+        { varsIgnorePattern: '^([A-Z_]|motion$)', args: 'after-used' },
+      ],
     },
   },
 ])

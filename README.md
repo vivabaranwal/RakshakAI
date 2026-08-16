@@ -1,120 +1,176 @@
 # 🛡️ Rakshak AI
 
-Rakshak AI is an AI-powered legal contract analysis platform designed to help users quickly identify risks, understand complex legal jargon, and analyze contracts with ease. Built with a robust backend using Python/FastAPI and a modern React frontend, Rakshak AI provides deterministic clause analysis, interactive PDF visualization, and a conversational interface to chat directly with your document.
+**AI-powered legal contract analysis for India.**
 
-## Features
+Rakshak AI reads an Indian legal document, flags clauses that are unfair, unenforceable, or
+void under **Indian law**, explains each one in plain English, and — crucially — suggests a
+corrected clause you can actually use instead.
 
-- **Document Analysis**: Upload PDF agreements and automatically extract text alongside visual bounding box coordinates.
-- **Risk Assessment**: Uses advanced LLMs (via Groq API) to extract clauses, assign fairness scores, and flag potential high-risk pitfalls.
-- **Interactive PDF Viewer**: Highlights categorized clauses directly on the document preview so users can read them in context.
-- **Talk to PDF (RAG Chatbot)**: A cyber-legal themed chat interface allowing users to query specific terms and summarize the uploaded agreement.
-- **Persistent State**: Background processing and SQLite database to save your document analysis securely.
+Every finding is grounded in Indian statute and precedent: the Indian Contract Act 1872,
+Consumer Protection Act 2019, DPDP Act 2023, Arbitration & Conciliation Act 1996, MSMED Act
+2006, GFR 2017, and Supreme Court authority such as *Percept D'Mark v. Zaheer Khan* and
+*Fateh Chand v. Balkishan Das*.
 
-##  Tech Stack
-
-### Frontend
-- **React 19 & Vite**
-- **TailwindCSS & Framer Motion** (for modern, dynamic, and aesthetic UI/UX)
-- **Zustand** (for state management)
-- **react-pdf-highlighter** (for bounding box annotations)
-
-### Backend
-- **Python & FastAPI**
-- **SQLite & SQLAlchemy** (for database and ORM management)
-- **Groq API (Llama-3.3-70b-versatile)** (for LLM inference)
-- **PyMuPDF / Fitz** (for text & bounding box extraction)
+> Rakshak AI provides **legal information, not legal advice**. Consult a practising advocate
+> before acting on any analysis.
 
 ---
 
-## 🚀 Getting Started
+## How it works
 
-Follow these steps to run Rakshak AI locally. You will need two separate terminal windows for the frontend and backend.
+1. **Choose your mode** — Personal, Enterprise, or Govt. Each applies a different lens.
+2. **Upload a PDF** — rental agreement, offer letter, MSA, tender document.
+3. **AI analyses it** — clause by clause, against Indian law, producing a fairness score.
+4. **Review the findings** — risky clauses are highlighted **in light red directly on the PDF**,
+   colour-coded by severity, with the offending statute cited.
+5. **Get the fix** — each flagged clause comes with a suggested fair replacement, ready to copy.
+6. **Ask questions** — the built-in legal assistant answers anything about your document,
+   citing the specific clause and the governing Indian provision.
+
+### The three modes
+
+| Mode | For | Focuses on |
+|------|-----|-----------|
+| **Personal** | Citizens, tenants, employees | Excessive deposits, arbitrary eviction, unenforceable non-competes, forfeiture of dues, waived consumer remedies |
+| **Enterprise** | Businesses | Uncapped indemnity, unlimited liability, IP overreach, MSMED 45-day payment breaches, invalid arbitrator appointment, DPDP gaps |
+| **Govt** | Officials, auditors | GFR 2017 and CVC violations, restrictive eligibility, collusion indicators under the Competition Act 2002, Article 14 arbitrariness |
+
+### Severity levels
+
+- 🔴 **Fraud Risk** — void or unenforceable under Indian law (e.g. a blanket non-compete under s.27).
+- 🟠 **Alert** — heavily one-sided and likely challengeable.
+- 🔵 **Caution** — lawful, but worth negotiating.
+
+---
+
+## Tech Stack
+
+**Frontend** — React 19, Vite, TailwindCSS, Framer Motion, Zustand, react-pdf-highlighter
+**Backend** — Python, FastAPI, SQLAlchemy, PyMuPDF
+**AI** — Groq API (`llama-3.3-70b-versatile`)
+**Database** — SQLite locally, PostgreSQL in production
+
+---
+
+## Running locally
 
 ### Prerequisites
-- Node.js (v18+)
-- Python (3.10+)
-- A Groq API Key
+- Node.js 18+
+- Python 3.10+
+- A free Groq API key from [console.groq.com](https://console.groq.com)
 
-### 1. Backend Setup
-
-Open your first terminal and navigate to the `backend` directory:
+### 1. Backend
 
 ```bash
 cd backend
-```
-
-**Create and activate the virtual environment:**
-```bash
-# Assuming Windows (PowerShell)
 python -m venv .venv
+
+# Windows
 .\.venv\Scripts\Activate.ps1
-```
+# macOS / Linux
+source .venv/bin/activate
 
-**Install dependencies:**
-*(Ensure you have your respective dependencies installed via your `requirements.txt` if available)*
-```bash
-pip install "fastapi[standard]" sqlalchemy python-dotenv groq PyMuPDF python-multipart
-```
-
-**Set Environment Variables:**
-Create a `.env` file in the `backend` folder and add your Groq API key:
-```env
-GROQ_API_KEY=your_groq_api_key_here
-```
-
-**Run the Backend Server:**
-```bash
+pip install -r requirements.txt
+cp .env.example .env        # then add your GROQ_API_KEY
 uvicorn app.main:app --reload
 ```
-*The backend will be available at `http://127.0.0.1:8000`*
 
-### 2. Frontend Setup
+API runs at `http://127.0.0.1:8000` — interactive docs at `/docs`.
 
-Open your second terminal and navigate to the `frontend` directory:
+### 2. Frontend
 
 ```bash
 cd frontend
-```
-
-**Install Dependencies:**
-```bash
 npm install
-```
-
-**Set Environment Variables:**
-Create a `.env` file in the `frontend` folder (if needed for any specific API routes, though Vite typically proxies or connects directly to the backend URL):
-```env
-VITE_API_URL=http://localhost:8000
-```
-
-**Run the Frontend Development Server:**
-```bash
+cp .env.example .env        # defaults to http://localhost:8000
 npm run dev
 ```
-*The web app will be available at `http://localhost:5173`*
+
+App runs at `http://localhost:5173`.
 
 ---
 
-## 📂 Project Structure
+## Configuration
+
+### Backend (`backend/.env`)
+
+| Variable | Required | Default | Purpose |
+|----------|----------|---------|---------|
+| `GROQ_API_KEY` | **Yes** | — | Groq API key for analysis and chat |
+| `GROQ_MODEL` | No | `llama-3.3-70b-versatile` | Model to use |
+| `ALLOWED_ORIGINS` | No | localhost dev ports | Comma-separated CORS origins |
+| `DATABASE_URL` | No | local SQLite | Postgres URL in production |
+| `UPLOAD_DIR` | No | `backend/uploads` | Where PDFs are stored |
+| `MAX_UPLOAD_BYTES` | No | `15728640` (15 MB) | Upload size limit |
+
+### Frontend (`frontend/.env`)
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `VITE_API_URL` | `http://localhost:8000` | Backend base URL |
+
+---
+
+## Deployment
+
+A [`render.yaml`](render.yaml) blueprint is included — it provisions the API, a static
+frontend, a Postgres database, and a persistent disk for uploads in one go.
+
+1. Push to GitHub.
+2. On [Render](https://render.com): **New → Blueprint**, select the repo.
+3. Set `GROQ_API_KEY` in the dashboard (it is deliberately not in the blueprint).
+4. After the first deploy, set the API's `ALLOWED_ORIGINS` to your frontend URL and the
+   frontend's `VITE_API_URL` to your API URL, then redeploy.
+
+**Important for any host:** uploads and SQLite must not live on ephemeral disk. Either mount
+a persistent volume and point `UPLOAD_DIR` at it (as the blueprint does), or set `DATABASE_URL`
+to a managed Postgres instance. Without this, documents vanish on restart.
+
+The frontend ships SPA rewrite rules for both Render (`_redirects`) and Vercel (`vercel.json`),
+so deep links like `/personal` survive a refresh.
+
+---
+
+## API
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| `GET` | `/api/v1/health` | Health check and LLM configuration status |
+| `POST` | `/api/v1/analyze` | Upload a PDF (`file`, `mode`) → `202` with `doc_id` |
+| `GET` | `/api/v1/status/{doc_id}` | Poll analysis; returns clauses when `COMPLETED` |
+| `GET` | `/api/v1/file/{doc_id}` | Stream the stored PDF |
+| `POST` | `/api/v1/chat/{doc_id}` | Ask a question about the document |
+| `DELETE` | `/api/v1/document/{doc_id}` | Delete a document and its file |
+
+Analysis runs in the background: `/analyze` returns immediately with `202`, then the client
+polls `/status` until `COMPLETED` or `FAILED`. Failures carry a human-readable `error`.
+
+---
+
+## Project structure
 
 ```
 RakshakAI/
 ├── backend/
 │   ├── app/
-│   │   ├── api/
-│   │   ├── services/       # PDF Extraction & API processing logic
-│   │   ├── main.py         # FastAPI instance
-│   │   ├── models.py       # SQLAlchemy Document & Clause Models
-│   │   └── database.py     # SQLite init
-│   └── tests/
-└── frontend/
-    ├── src/
-    │   ├── components/     # Navbar, SharedUI, Chatbot, Document Viewer
-    │   ├── pages/          # LandingPage, Contact
-    │   └── index.css       # Tailwind entry and global styles
-    ├── package.json
-    └── tailwind.config.js
+│   │   ├── main.py              # FastAPI routes, migrations
+│   │   ├── config.py            # env-driven configuration
+│   │   ├── models.py            # Document & Clause models
+│   │   ├── database.py          # SQLite/Postgres engine
+│   │   └── services/
+│   │       ├── indian_law.py    # Indian statutes + prompt construction
+│   │       ├── clause_analyzer.py
+│   │       └── pdf_extractor.py # text + bounding boxes
+│   └── requirements.txt
+├── frontend/
+│   └── src/
+│       ├── lib/api.js           # API client, severity tokens
+│       ├── pages/               # LandingPage, Workspace
+│       ├── components/          # RiskFeed, HighlightViewer, LegalAssistant
+│       └── store/               # Zustand state
+└── render.yaml
 ```
 
-## 📜 License
-This project is proprietary and built for demonstration / specialized legal AI analysis.
+## License
+
+Proprietary — built for demonstration and specialised legal AI analysis in India.
