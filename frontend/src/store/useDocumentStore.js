@@ -1,54 +1,72 @@
 import { create } from 'zustand';
 
+const KEY_DOC = 'rakshak_doc_id';
+const KEY_MODE = 'rakshak_mode';
+
+const readStoredId = () => {
+    const raw = localStorage.getItem(KEY_DOC);
+    const n = raw ? parseInt(raw, 10) : NaN;
+    return Number.isFinite(n) ? n : null;
+};
+
 export const useDocumentStore = create((set) => ({
-    docId: localStorage.getItem('rakshak_doc_id') ? parseInt(localStorage.getItem('rakshak_doc_id')) : null,
+    docId: readStoredId(),
+    mode: localStorage.getItem(KEY_MODE) || 'Personal',
     activeFileUrl: null,
     clauses: [],
     riskScore: null,
     summary: '',
+    title: '',
     selectedClause: null,
     isProcessing: false,
-    scrollTo: null,
+    error: '',
+
+    setMode: (mode) => {
+        localStorage.setItem(KEY_MODE, mode);
+        set({ mode });
+    },
 
     setDocId: (id) => {
-        if (id === null || id === undefined) return;
-        const numericId = typeof id === 'string' ? parseInt(id) : id;
-        localStorage.setItem('rakshak_doc_id', String(numericId));
-        set({ docId: numericId });
+        const n = typeof id === 'string' ? parseInt(id, 10) : id;
+        if (!Number.isFinite(n)) return;
+        localStorage.setItem(KEY_DOC, String(n));
+        set({ docId: n });
     },
-    setActiveFileUrl: (url) => set({ activeFileUrl: url }),
-    setIsProcessing: (val) => set({ isProcessing: val }),
-    setScrollTo: (fn) => set({ scrollTo: fn }),
 
-    setDocumentData: (url, clauses, riskScore, summary = '', docId = null) => set((state) => {
-        const finalDocId = docId !== null ? (typeof docId === 'string' ? parseInt(docId) : docId) : state.docId;
+    setActiveFileUrl: (activeFileUrl) => set({ activeFileUrl }),
+    setIsProcessing: (isProcessing) => set({ isProcessing }),
+    setError: (error) => set({ error, isProcessing: false }),
+    setSelectedClause: (selectedClause) => set({ selectedClause }),
 
-        if (finalDocId) {
-            localStorage.setItem('rakshak_doc_id', String(finalDocId));
-        }
-        return {
-            activeFileUrl: url,
-            clauses: clauses ?? [],
-            riskScore: riskScore ?? null,
-            summary,
-            selectedClause: null,
-            isProcessing: false,
-            docId: finalDocId,
-        };
-    }),
-
-    setSelectedClause: (clause) => set({ selectedClause: clause }),
+    setDocumentData: ({ url, clauses, riskScore, summary = '', docId = null, title = '' }) =>
+        set((state) => {
+            const finalId = docId ?? state.docId;
+            if (Number.isFinite(finalId)) localStorage.setItem(KEY_DOC, String(finalId));
+            return {
+                activeFileUrl: url ?? state.activeFileUrl,
+                clauses: clauses ?? [],
+                riskScore: riskScore ?? null,
+                summary,
+                title,
+                docId: finalId,
+                selectedClause: null,
+                isProcessing: false,
+                error: '',
+            };
+        }),
 
     reset: () => {
-        localStorage.removeItem('rakshak_doc_id');
+        localStorage.removeItem(KEY_DOC);
         set({
             docId: null,
             activeFileUrl: null,
             clauses: [],
             riskScore: null,
             summary: '',
+            title: '',
             selectedClause: null,
             isProcessing: false,
+            error: '',
         });
     },
 }));
