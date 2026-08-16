@@ -54,6 +54,8 @@ export default function Workspace({ mode }) {
     const [uploading, setUploading] = useState(false);
     const [file, setFile] = useState(null);
     const [dragging, setDragging] = useState(false);
+    // Which pane is showing below lg, where the split view doesn't fit.
+    const [mobileTab, setMobileTab] = useState('risks');
     const cancelled = useRef(false);
 
     const copy = MODE_COPY[mode] ?? MODE_COPY.Personal;
@@ -178,27 +180,29 @@ export default function Workspace({ mode }) {
     // ---------- Upload view ----------
     if (!activeFileUrl) {
         return (
-            <div className="min-h-screen bg-latte-bg dot-grid pt-16">
-                <div className="mx-auto flex max-w-xl flex-col px-6 py-14 animate-fadeIn">
+            <div className="min-h-[100svh] bg-latte-bg dot-grid pt-16">
+                <div className="mx-auto flex w-full max-w-xl flex-col px-5 py-10 animate-fadeIn sm:px-6 sm:py-14">
                     <button
                         onClick={() => navigate('/')}
-                        className="mb-8 flex w-fit items-center gap-2 font-sans text-[10px] font-semibold uppercase tracking-[0.2em] text-latte-subtext transition-colors hover:text-latte-ink"
+                        className="mb-6 flex w-fit items-center gap-2 font-sans text-[10px] font-semibold uppercase tracking-[0.2em] text-latte-subtext transition-colors hover:text-latte-ink sm:mb-8"
                     >
                         <ArrowLeft className="h-3 w-3" /> All modes
                     </button>
 
-                    <h1 className="font-serif text-5xl font-medium uppercase tracking-widest text-latte-ink">{copy.heading}</h1>
+                    <h1 className="font-serif text-3xl font-medium uppercase tracking-[0.15em] text-latte-ink sm:text-5xl sm:tracking-widest">
+                        {copy.heading}
+                    </h1>
 
-                    <div className="w-full h-[1.5px] bg-latte-ink my-6" />
+                    <div className="w-full h-[1.5px] bg-latte-ink my-5 sm:my-6" />
 
-                    <p className="font-serif text-lg italic leading-relaxed text-latte-subtext">{copy.blurb}</p>
+                    <p className="font-serif text-base italic leading-relaxed text-latte-subtext sm:text-lg">{copy.blurb}</p>
 
                     <div
                         onDrop={onDrop}
                         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
                         onDragLeave={() => setDragging(false)}
                         onClick={() => !file && document.getElementById('rakshak-file')?.click()}
-                        className={`mt-8 flex cursor-pointer flex-col items-center gap-4 rounded-none border-2 border-dashed p-14 transition-colors duration-200
+                        className={`mt-7 flex cursor-pointer flex-col items-center gap-4 rounded-none border-2 border-dashed px-5 py-10 transition-colors duration-200 sm:mt-8 sm:p-14
                             ${dragging || file ? `${accent.ring} bg-latte-surface` : 'border-latte-muted bg-latte-surface hover:border-latte-ink'}`}
                     >
                         <input
@@ -209,8 +213,8 @@ export default function Workspace({ mode }) {
                         {file ? (
                             <>
                                 <FileText className="h-8 w-8 text-latte-ink" strokeWidth={1.5} />
-                                <div className="text-center">
-                                    <p className="max-w-[280px] truncate font-sans text-sm font-medium text-latte-ink">{file.name}</p>
+                                <div className="w-full min-w-0 text-center">
+                                    <p className="mx-auto max-w-full truncate px-2 font-sans text-sm font-medium text-latte-ink sm:max-w-[280px]">{file.name}</p>
                                     <p className="mt-1 font-sans text-[10px] font-semibold uppercase tracking-[0.2em] text-latte-subtext">
                                         {file.size < 1024 * 1024
                                             ? `${Math.max(1, Math.round(file.size / 1024))} KB`
@@ -268,30 +272,66 @@ export default function Workspace({ mode }) {
 
     // ---------- Split workspace ----------
     return (
-        <div className="flex h-screen flex-col overflow-hidden bg-latte-bg pt-16">
-            <div className="flex flex-none items-center justify-between border-b-2 border-latte-ink bg-latte-bg px-6 py-3">
-                <span className="font-serif text-xl font-medium uppercase tracking-[0.15em] text-latte-ink">{copy.heading}</span>
+        // min-h-0 on the flex children below is what lets the panes actually
+        // size themselves; without it they collapse inside the flex column.
+        <div className="flex h-[100svh] flex-col overflow-hidden bg-latte-bg pt-16">
+            <div className="flex flex-none flex-wrap items-center justify-between gap-2 border-b-2 border-latte-ink bg-latte-bg px-4 py-2.5 sm:px-6 sm:py-3">
+                <span className="font-serif text-base font-medium uppercase tracking-[0.12em] text-latte-ink sm:text-xl sm:tracking-[0.15em]">
+                    {copy.heading}
+                </span>
                 <button
                     onClick={startOver}
-                    className="flex items-center gap-2 rounded-none border-2 border-latte-ink bg-transparent px-5 py-2 font-sans text-[10px] font-semibold uppercase tracking-[0.2em] text-latte-ink transition-colors duration-200 hover:bg-latte-ink hover:text-latte-bg"
+                    className="flex items-center gap-2 rounded-none border-2 border-latte-ink bg-transparent px-3 py-2 font-sans text-[10px] font-semibold uppercase tracking-[0.15em] text-latte-ink transition-colors duration-200 hover:bg-latte-ink hover:text-latte-bg sm:px-5 sm:tracking-[0.2em]"
                 >
                     <RotateCcw className="h-3 w-3" /> New document
                 </button>
             </div>
 
-            <main className="grid flex-1 grid-cols-1 overflow-hidden lg:grid-cols-5">
-                <div className="order-2 h-full overflow-hidden border-latte-ink lg:order-1 lg:col-span-2 lg:border-r-2">
+            {/* On phones the two panes don't fit side by side, so they become
+                tabs. From lg up they return to the split view. */}
+            <div className="flex flex-none border-b-2 border-latte-ink lg:hidden">
+                {[
+                    { id: 'risks', label: clauses.length ? `Risks (${clauses.length})` : 'Risks' },
+                    { id: 'document', label: 'Document' },
+                ].map((t) => (
+                    <button
+                        key={t.id}
+                        onClick={() => setMobileTab(t.id)}
+                        className={`flex-1 py-3 font-sans text-[10px] font-semibold uppercase tracking-[0.2em] transition-colors ${
+                            mobileTab === t.id
+                                ? 'bg-latte-ink text-latte-bg'
+                                : 'bg-latte-bg text-latte-subtext'
+                        }`}
+                    >
+                        {t.label}
+                    </button>
+                ))}
+            </div>
+
+            <main className="flex min-h-0 flex-1 flex-col overflow-hidden lg:grid lg:grid-cols-5">
+                <div
+                    className={`min-h-0 flex-1 overflow-hidden border-latte-ink lg:order-1 lg:col-span-2 lg:flex lg:border-r-2
+                        ${mobileTab === 'risks' ? 'flex' : 'hidden'}`}
+                >
                     <RiskFeed
                         clauses={clauses}
                         summary={summary}
                         riskScore={riskScore}
                         selected={selectedClause}
-                        onSelect={setSelectedClause}
+                        onSelect={(c) => {
+                            setSelectedClause(c);
+                            // Jumping to a clause is meaningless if the document
+                            // pane is hidden, so switch to it on mobile.
+                            if (c && window.innerWidth < 1024) setMobileTab('document');
+                        }}
                         isProcessing={isProcessing}
                         title={title}
                     />
                 </div>
-                <div className="order-1 h-full overflow-hidden lg:order-2 lg:col-span-3">
+                <div
+                    className={`min-h-0 flex-1 overflow-hidden lg:order-2 lg:col-span-3 lg:block
+                        ${mobileTab === 'document' ? 'block' : 'hidden'}`}
+                >
                     <HighlightViewer />
                 </div>
             </main>

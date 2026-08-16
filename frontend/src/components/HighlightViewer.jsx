@@ -21,7 +21,7 @@ function ClauseTooltip({ clause }) {
     if (!clause) return null;
     const s = severityOf(clause);
     return (
-        <div className="max-w-sm rounded-none border-2 border-latte-ink bg-latte-surface p-4">
+        <div className="w-[min(20rem,calc(100vw-2rem))] rounded-none border-2 border-latte-ink bg-latte-surface p-3.5 sm:w-auto sm:max-w-sm sm:p-4">
             <div className="mb-2 flex items-center gap-2">
                 <span className={`h-2 w-2 rounded-none ${s.dot}`} />
                 <span className={`font-sans text-[10px] font-semibold uppercase tracking-[0.15em] ${s.text}`}>
@@ -47,6 +47,8 @@ export default function HighlightViewer() {
     // Keep it in a ref, not state: storing it in state re-renders PdfHighlighter,
     // which remounts the viewer and drops the very function we just captured.
     const scrollToRef = useRef(null);
+    // Used to tell whether this pane is actually laid out before scrolling.
+    const containerRef = useRef(null);
     // Bumped when scrollTo arrives, so a clause selected before the PDF finished
     // loading still gets scrolled to once it's ready.
     const [scrollReady, setScrollReady] = useState(0);
@@ -93,9 +95,27 @@ export default function HighlightViewer() {
 
     // Scroll the viewer when a clause is picked in the risk feed.
     useEffect(() => {
-        if (!scrollToRef.current || !selectedClause) return;
+        if (!scrollToRef.current || !selectedClause) return undefined;
         const target = highlights.find((h) => h.id === String(selectedClause.id));
-        if (target) scrollToRef.current(target);
+        if (!target) return undefined;
+
+        // On phones the document pane is behind a tab, so a selection made from
+        // the risk feed can fire while this pane is still display:none. pdf.js
+        // cannot scroll a hidden element ("offsetParent is not set"), so wait
+        // for it to be laid out before scrolling.
+        let raf = 0;
+        let attempts = 0;
+        const scrollWhenVisible = () => {
+            const el = containerRef.current;
+            const visible = el && el.offsetParent !== null && el.clientHeight > 0;
+            if (visible) {
+                scrollToRef.current(target);
+            } else if (attempts++ < 60) {
+                raf = requestAnimationFrame(scrollWhenVisible);
+            }
+        };
+        raf = requestAnimationFrame(scrollWhenVisible);
+        return () => cancelAnimationFrame(raf);
     }, [selectedClause, scrollReady, highlights]);
 
     const renderHighlight = useCallback((
@@ -130,7 +150,7 @@ export default function HighlightViewer() {
     if (!activeFileUrl) return null;
 
     return (
-        <div className="relative h-full w-full overflow-hidden bg-latte-muted">
+        <div ref={containerRef} className="relative h-full w-full overflow-hidden bg-latte-muted">
             {isProcessing && (
                 <div className="absolute inset-0 z-50 flex items-center justify-center bg-latte-bg/75 backdrop-blur-[2px]">
                     <div className="flex flex-col items-center gap-4 rounded-none border-2 border-latte-ink bg-latte-surface px-9 py-7">
@@ -160,6 +180,9 @@ export default function HighlightViewer() {
                     <PdfHighlighter
                         ref={highlighterRef}
                         pdfDocument={pdfDocument}
+                        // Fit the page to the pane so a phone shows the full
+                        // width instead of a zoomed-in corner of the document.
+                        pdfScaleValue="page-width"
                         enableAreaSelection={NO_AREA_SELECTION}
                         onScrollChange={NOOP}
                         scrollRef={handleScrollRef}
