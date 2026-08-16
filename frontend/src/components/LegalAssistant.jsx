@@ -80,7 +80,7 @@ export default function LegalAssistant() {
         <>
             <motion.button
                 onClick={() => setIsOpen((v) => !v)}
-                className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-none border-2 border-latte-ink bg-latte-ink transition-colors hover:border-latte-accent hover:bg-latte-accent"
+                className="fixed bottom-5 right-5 z-50 flex h-12 w-12 items-center justify-center rounded-none border-2 border-latte-ink bg-latte-ink transition-colors hover:border-latte-accent hover:bg-latte-accent sm:bottom-6 sm:right-6 sm:h-14 sm:w-14"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 aria-label={isOpen ? 'Close legal assistant' : 'Open legal assistant'}
@@ -106,7 +106,9 @@ export default function LegalAssistant() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 16, scale: 0.97 }}
                         transition={{ duration: 0.2, ease: 'easeOut' }}
-                        className="fixed bottom-24 right-6 z-50 flex h-[540px] w-[min(400px,calc(100vw-3rem))] flex-col overflow-hidden rounded-none border-2 border-latte-ink bg-latte-surface"
+                        // top-20 keeps the panel clear of the fixed navbar on
+                        // short screens instead of sliding underneath it.
+                        className="fixed inset-x-3 bottom-20 top-20 z-50 flex flex-col overflow-hidden rounded-none border-2 border-latte-ink bg-latte-surface sm:inset-x-auto sm:right-6 sm:top-auto sm:bottom-24 sm:h-[540px] sm:w-[400px]"
                     >
                         <div className="flex flex-none items-center gap-3 border-b-2 border-latte-ink bg-latte-bg px-5 py-4">
                             <div className="flex h-8 w-8 items-center justify-center rounded-none border border-latte-ink bg-latte-ink">

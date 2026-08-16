@@ -21,7 +21,7 @@ function ScoreRing({ riskScore, isProcessing }) {
     const C = 2 * Math.PI * R;
 
     return (
-        <div className="relative h-24 w-24 flex-none">
+        <div className="relative h-16 w-16 flex-none sm:h-24 sm:w-24">
             <svg className="h-full w-full -rotate-90" viewBox="0 0 80 80">
                 <circle cx="40" cy="40" r={R} fill="none" stroke="#CDB99A" strokeWidth="7" />
                 <motion.circle
@@ -34,10 +34,10 @@ function ScoreRing({ riskScore, isProcessing }) {
                 />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className={`font-serif text-3xl font-medium leading-none ${tone}`}>
+                <span className={`font-serif text-xl font-medium leading-none sm:text-3xl ${tone}`}>
                     {isProcessing || fairness === null ? '—' : fairness}
                 </span>
-                <span className="mt-1 font-sans text-[8px] font-semibold uppercase tracking-[0.2em] text-latte-subtext">
+                <span className="mt-0.5 font-sans text-[7px] font-semibold uppercase tracking-[0.15em] text-latte-subtext sm:mt-1 sm:text-[8px] sm:tracking-[0.2em]">
                     Fairness
                 </span>
             </div>
@@ -87,17 +87,17 @@ function ClauseCard({ clause, isActive, onSelect }) {
                     onClick={() => onSelect(isActive ? null : clause)}
                     className="w-full p-4 text-left"
                 >
-                    <div className="mb-3 flex items-start justify-between gap-3">
-                        <span className={`rounded-none border px-3 py-1 font-sans text-[10px] font-semibold uppercase tracking-[0.15em] ${s.chip}`}>
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+                        <span className={`rounded-none border px-2.5 py-1 font-sans text-[9px] font-semibold uppercase tracking-[0.12em] sm:px-3 sm:text-[10px] sm:tracking-[0.15em] ${s.chip}`}>
                             {s.label}
                         </span>
-                        <div className="flex items-center gap-2.5">
-                            <span className="font-sans text-[9px] font-semibold uppercase tracking-[0.15em] text-latte-subtext">{clause.type}</span>
-                            <span className="font-serif text-sm font-medium text-latte-ink">
+                        <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
+                            <span className="truncate font-sans text-[9px] font-semibold uppercase tracking-[0.12em] text-latte-subtext sm:tracking-[0.15em]">{clause.type}</span>
+                            <span className="flex-none font-serif text-sm font-medium text-latte-ink">
                                 {clause.fairness_score}/100
                             </span>
                             <ChevronDown
-                                className={`h-3.5 w-3.5 text-latte-subtext transition-transform duration-200 ${isActive ? 'rotate-180' : ''}`}
+                                className={`h-3.5 w-3.5 flex-none text-latte-subtext transition-transform duration-200 ${isActive ? 'rotate-180' : ''}`}
                             />
                         </div>
                     </div>
@@ -156,14 +156,14 @@ export default function RiskFeed({
     return (
         <div className="flex h-full flex-col overflow-hidden bg-latte-bg">
             {/* Header */}
-            <div className="flex-none border-b-2 border-latte-ink bg-latte-bg p-6">
-                <div className="flex items-start gap-5">
+            <div className="flex-none border-b-2 border-latte-ink bg-latte-bg p-4 sm:p-6">
+                <div className="flex items-start gap-3.5 sm:gap-5">
                     <ScoreRing riskScore={riskScore} isProcessing={isProcessing} />
                     <div className="min-w-0 flex-1">
-                        <h2 className="truncate font-serif text-2xl font-medium uppercase tracking-wide text-latte-ink" title={title}>
+                        <h2 className="truncate font-serif text-lg font-medium uppercase tracking-wide text-latte-ink sm:text-2xl" title={title}>
                             {title || 'Analysis'}
                         </h2>
-                        <p className="mt-1.5 font-serif text-sm italic leading-relaxed text-latte-subtext">
+                        <p className="mt-1 font-serif text-xs italic leading-relaxed text-latte-subtext sm:mt-1.5 sm:text-sm">
                             {isProcessing ? 'Reviewing clauses against Indian statutes…' : summary}
                         </p>
                         {!isProcessing && clauses.length > 0 && (

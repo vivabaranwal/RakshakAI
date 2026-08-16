@@ -45,28 +45,28 @@ export default function LandingPage() {
             {/* Nav removed for global Navbar */}
 
             {/* Hero */}
-            <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 pt-24 pb-16">
-                <div className="text-center mb-16 animate-fade-up">
-                    <div className="inline-flex items-center gap-2 font-sans text-[10px] font-semibold uppercase tracking-[0.2em] text-latte-subtext border border-latte-ink rounded-none px-4 py-2 mb-8">
+            <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-5 pt-20 pb-12 sm:px-6 sm:pt-24 sm:pb-16">
+                <div className="text-center mb-10 sm:mb-16 animate-fade-up">
+                    <div className="inline-flex items-center gap-2 font-sans text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.15em] sm:tracking-[0.2em] text-latte-subtext border border-latte-ink rounded-none px-3 py-1.5 sm:px-4 sm:py-2 mb-6 sm:mb-8">
                         <Sparkles className="w-3 h-3" />
                         AI-Powered Legal Protection
                     </div>
-                    <h1 className="font-serif text-5xl md:text-7xl font-medium uppercase tracking-widest leading-[1.05] mb-6 text-latte-ink">
+                    <h1 className="font-serif text-[2rem] sm:text-5xl md:text-7xl font-medium uppercase tracking-[0.12em] sm:tracking-widest leading-[1.15] sm:leading-[1.05] mb-5 sm:mb-6 text-latte-ink">
                         The Universal
                         <br />
                         <span className="gradient-text">Legal Shield</span>
                     </h1>
 
-                    <div className="w-24 h-[1.5px] bg-latte-ink mx-auto mb-6" />
+                    <div className="w-20 sm:w-24 h-[1.5px] bg-latte-ink mx-auto mb-5 sm:mb-6" />
 
-                    <p className="font-serif text-xl md:text-2xl italic text-latte-subtext max-w-xl mx-auto leading-relaxed">
+                    <p className="font-serif text-base sm:text-xl md:text-2xl italic text-latte-subtext max-w-xl mx-auto leading-relaxed">
                         Upload any Indian legal document. Get instant risk scoring, clause-by-clause
                         analysis grounded in Indian statutes, and suggested fair replacements.
                     </p>
                 </div>
 
                 {/* Persona Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-5 w-full max-w-5xl">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5 w-full max-w-5xl">
                     {personas.map((p, i) => (
                         <button
                             key={p.id}
@@ -76,7 +76,7 @@ export default function LandingPage() {
                             // these cards stuck at opacity 0.
                             style={{ animationDelay: `${(i + 1) * 100}ms` }}
                             className="
-                bg-latte-surface rounded-none p-7 text-left cursor-pointer
+                bg-latte-surface rounded-none p-6 sm:p-7 text-left cursor-pointer
                 border-l-4 border-l-latte-ink border-t border-r border-b border-latte-muted
                 hover:bg-latte-bg hover:border-l-latte-accent
                 transition-colors duration-200
@@ -95,7 +95,7 @@ export default function LandingPage() {
                                     {p.subtitle}
                                 </span>
                             </div>
-                            <h2 className="font-serif text-3xl font-medium uppercase tracking-wide text-latte-ink mb-3">{p.label}</h2>
+                            <h2 className="font-serif text-2xl sm:text-3xl font-medium uppercase tracking-wide text-latte-ink mb-3">{p.label}</h2>
                             <p className="font-sans text-latte-subtext text-sm leading-relaxed mb-5">{p.description}</p>
 
                             {/* Tags */}
@@ -117,9 +117,9 @@ export default function LandingPage() {
                 </div>
 
                 {/* Footer note */}
-                <div className="mt-16 w-full max-w-5xl animate-fade-up animate-delay-400">
-                    <div className="w-full h-[1.5px] bg-latte-ink mb-6" />
-                    <p className="text-center font-sans text-[10px] font-semibold uppercase tracking-[0.2em] text-latte-subtext">
+                <div className="mt-12 sm:mt-16 w-full max-w-5xl animate-fade-up animate-delay-400">
+                    <div className="w-full h-[1.5px] bg-latte-ink mb-5 sm:mb-6" />
+                    <p className="text-center font-sans text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.15em] sm:tracking-[0.2em] text-latte-subtext leading-relaxed">
                         Indian Contract Act 1872 · Consumer Protection Act 2019 · DPDP Act 2023 · Built for India
                     </p>
                     <p className="mt-2 text-center font-serif text-sm italic text-latte-subtext/80">

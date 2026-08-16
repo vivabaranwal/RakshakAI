@@ -5,8 +5,8 @@ const PORTFOLIO_URL = 'https://vivabaranwal.vercel.app/';
 
 export default function About() {
     return (
-        <div className="min-h-screen bg-latte-bg dot-grid text-latte-text pt-24 pb-12 px-6 font-sans">
-            <div className="max-w-4xl mx-auto space-y-16">
+        <div className="min-h-[100svh] bg-latte-bg dot-grid text-latte-text pt-20 sm:pt-24 pb-12 px-5 sm:px-6 font-sans">
+            <div className="max-w-4xl mx-auto space-y-10 sm:space-y-16">
 
                 {/* Header */}
                 <motion.div
@@ -14,19 +14,19 @@ export default function About() {
                     animate={{ opacity: 1, y: 0 }}
                     className="text-center space-y-4"
                 >
-                    <h1 className="font-serif text-5xl md:text-6xl font-medium uppercase tracking-widest text-latte-ink">
+                    <h1 className="font-serif text-3xl sm:text-5xl md:text-6xl font-medium uppercase tracking-[0.12em] sm:tracking-widest text-latte-ink">
                         About Rakshak AI
                     </h1>
 
-                    <div className="w-24 h-[1.5px] bg-latte-ink mx-auto" />
+                    <div className="w-20 sm:w-24 h-[1.5px] bg-latte-ink mx-auto" />
 
-                    <p className="font-serif text-xl md:text-2xl italic text-latte-subtext max-w-2xl mx-auto leading-relaxed">
+                    <p className="font-serif text-base sm:text-xl md:text-2xl italic text-latte-subtext max-w-2xl mx-auto leading-relaxed">
                         Empowering tenants and gig workers with AI-driven legal transparency. We believe everyone deserves to know what they are signing.
                     </p>
                 </motion.div>
 
                 {/* Grid */}
-                <div className="grid md:grid-cols-3 gap-8">
+                <div className="grid md:grid-cols-3 gap-5 sm:gap-8">
                     {[
                         {
                             icon: <Shield className="w-6 h-6 text-latte-bg" strokeWidth={1.75} />,
@@ -65,11 +65,11 @@ export default function About() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.6 }}
-                    className="bg-latte-surface border-2 border-latte-ink rounded-none p-8 md:p-12"
+                    className="bg-latte-surface border-2 border-latte-ink rounded-none p-6 sm:p-8 md:p-12"
                 >
-                    <h2 className="font-serif text-3xl md:text-4xl font-medium uppercase tracking-widest text-latte-ink">Behind the Code</h2>
+                    <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl font-medium uppercase tracking-[0.12em] sm:tracking-widest text-latte-ink">Behind the Code</h2>
 
-                    <div className="w-full h-[1.5px] bg-latte-ink my-8" />
+                    <div className="w-full h-[1.5px] bg-latte-ink my-6 sm:my-8" />
 
                     <div className="space-y-5 font-sans text-sm text-latte-text leading-relaxed">
                         <p>
